@@ -39,9 +39,13 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/5 py-6">
+      <div className="border-t border-white/5 py-6 px-5">
         <p className="text-center text-xs text-slate-500">
           © {new Date().getFullYear()} Vytora. Live Better. Every Day.
+        </p>
+        <p className="mt-1 text-center text-xs text-slate-600">
+          This app is owned by{" "}
+          <span className="text-slate-500">MetroCarDeals Ltd.</span>
         </p>
       </div>
     </footer>
