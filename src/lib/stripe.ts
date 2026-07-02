@@ -14,4 +14,4 @@ export const PLANS = {
   elite: { id: "elite", name: "Elite", price: 9000, priceLabel: "₦9,000", tagline: "The complete performance & wellness suite.", features: ["Everything in Pro", "AI adaptive training plans", "Recovery & sleep insights", "Live route safety sharing", "Family accounts (up to 5)", "Early access to new features"], priceId: null as string | null },
 } as const;
 
-export type PlanId = keyof  typeof PLANS;
+export type PlanId = keyof typeof PLANS;
