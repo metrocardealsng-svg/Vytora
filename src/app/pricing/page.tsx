@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PricingCards from "@/components/PricingCards";
 import { PLANS } from "@/lib/plans";
+
 import { getSessionUserId } from "@/lib/auth";
 
 export const metadata: Metadata = {
