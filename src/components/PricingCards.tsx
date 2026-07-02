@@ -106,7 +106,7 @@ function BankTransferModal({
 
         {/* WhatsApp button */}
         <a
-          href="https://wa.me/2349073965030?text=Hi%2C%20I%20just%20paid%20for%20Vytora%20" +
+         href={`https://wa.me/2349073965030?text=Hi%2C%20I%20just%20paid%20for%20Vytora%20${encodeURIComponent(plan.name)}%20plan.%20Here%20is%20my%20receipt.`}
             encodeURIComponent(plan.name) +
             "%20plan.%20Here%20is%20my%20receipt."
           target="_blank"
