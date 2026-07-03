@@ -40,7 +40,10 @@ export default function Navbar() {
   const links = [
     { href: "/tracker", label: "Tracker" },
     { href: "/pricing", label: "Pricing" },
+   
+    { href: "/tribe", label: "Tribe" },
     { href: "/compare", label: "Compare" },
+  
     { href: "/best/step-tracking-apps", label: "Best Apps" },
   ];
 
