@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import ResetPasswordForm from "@/components/ResetPasswordForm";
 
@@ -9,7 +10,9 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="aurora flex flex-1 items-center justify-center px-5 py-16">
-        <ResetPasswordForm />
+        <Suspense fallback={<div className="text-slate-400">Loading...</div>}>
+          <ResetPasswordForm />
+        </Suspense>
       </main>
     </div>
   );
