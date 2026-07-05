@@ -5,6 +5,7 @@ import {
   timestamp,
   integer,
   doublePrecision,
+  numeric,
   jsonb,
   boolean,
 } from "drizzle-orm/pg-core";
@@ -20,6 +21,12 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   resetToken: text("reset_token"),
   resetTokenExpires: timestamp("reset_token_expires", { withTimezone: true }),
+  avatarUrl: text("avatar_url"),
+  bio: text("bio"),
+  weightKg: numeric("weight_kg"),
+  heightCm: numeric("height_cm"),
+  fitnessGoal: text("fitness_goal").default("general"),
+  location: text("location"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
