@@ -6,6 +6,7 @@ import {
   integer,
   doublePrecision,
   jsonb,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -13,9 +14,12 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull().default(""),
-  plan: text("plan").notNull().default("free"), // free | pro | elite
+  plan: text("plan").notNull().default("free"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  emailVerified: boolean("email_verified").default(false),
+  resetToken: text("reset_token"),
+  resetTokenExpires: timestamp("reset_token_expires", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -26,7 +30,7 @@ export const activities = pgTable("activities", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull().default("walk"), // walk | run | hike
+  type: text("type").notNull().default("walk"),
   title: text("title").notNull().default("Untitled Activity"),
   distanceMeters: doublePrecision("distance_meters").notNull().default(0),
   durationSeconds: integer("duration_seconds").notNull().default(0),
