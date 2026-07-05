@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import VytoChat from "@/components/VytoChat";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vytora.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vytora.fit";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
     "running app",
     "Strava alternative",
     "Vytora",
+    "fitness app Nigeria",
+    "workout app Nigeria",
   ],
   openGraph: {
     title: "Vytora — Live Better. Every Day.",
@@ -39,7 +42,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        <VytoChat />
+      </body>
     </html>
   );
 }
