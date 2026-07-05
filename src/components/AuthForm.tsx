@@ -107,6 +107,13 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {isSignup ? "Log in" : "Create one free"}
         </Link>
       </p>
+      {!isSignup && (
+  <p className="mt-2 text-center text-sm">
+    <Link href="/forgot-password" className="text-slate-400 hover:text-mint">
+      Forgot password?
+    </Link>
+  </p>
+)}
     </div>
   );
 }
