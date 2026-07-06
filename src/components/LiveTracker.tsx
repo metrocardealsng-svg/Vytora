@@ -24,7 +24,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [gpsReady, setGpsReady] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [activityType, setActivityType] = useState<"walk" | "run" | "hike">("walk");
+  const [activityType, setActivityType] = useState<"walk" | "run" | "hike" | "cycle" | "treadmill" | "gym" | "yoga" | "swim">("walk");
 
   const watchId = useRef<number | null>(null);
   const lastPoint = useRef<LatLng | null>(null);
@@ -35,7 +35,10 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
 
   const steps = Math.round(distance / STRIDE_METERS);
   const miles = metersToMiles(distance);
-  const calories = Math.round(miles * (activityType === "run" ? 110 : 95));
+  const calorieRate: Record<string, number> = { walk: 95, run: 110, hike: 100, cycle: 50, treadmill: 105, gym: 8, yoga: 4, swim: 130 };
+  const calories = activityType === "gym" || activityType === "yoga"
+    ? Math.round((elapsed / 60) * (calorieRate[activityType] || 95))
+    : Math.round(miles * (calorieRate[activityType] || 95));
   const paceSecPerMile = miles > 0.01 ? elapsed / miles : 0;
   const speedMph = elapsed > 0 ? (miles / (elapsed / 3600)) : 0;
 
@@ -189,7 +192,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           {/* Type selector */}
           <div className="mb-6 flex items-center justify-between gap-3">
             <div className="inline-flex rounded-xl bg-white/5 p-1">
-              {(["walk", "run", "hike"] as const).map((t) => (
+              {(["walk", "run", "hike", "cycle", "treadmill", "gym", "yoga", "swim"] as const).map((t) => (
                 <button
                   key={t}
                   disabled={active || status === "paused"}
