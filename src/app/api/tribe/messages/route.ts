@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { getCurrentUser } from "@/lib/auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,15 +18,13 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await getCurrentUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { body } = await req.json();
+  const { body, userId, username } = await req.json();
   if (!body?.trim()) return Response.json({ error: "Message required" }, { status: 400 });
+  if (!userId || !username) return Response.json({ error: "User info required" }, { status: 400 });
 
   const { data, error } = await supabase.from("tribe_messages").insert({
-    user_id: user.id,
-    username: user.name || user.email.split("@")[0],
+    user_id: userId,
+    username,
     body: body.trim(),
   }).select().single();
 
