@@ -46,7 +46,7 @@ function LiveChat({ userId, username }: { userId: string; username: string }) {
     await fetch("/api/tribe/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: trimmed }),
+      body: JSON.stringify({ body: trimmed, userId, username }),
     });
     setSending(false);
     fetchMessages();
@@ -131,7 +131,7 @@ function JourneyFeed({ userId, username }: { userId: string; username: string })
     const res = await fetch("/api/tribe/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, media_urls: mediaUrls }),
+      body: JSON.stringify({ content, media_urls: mediaUrls, userId, username }),
     });
     const data = await res.json();
     if (data.post) {
