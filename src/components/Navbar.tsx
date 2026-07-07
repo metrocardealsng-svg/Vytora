@@ -42,7 +42,8 @@ export default function Navbar() {
     { href: "/pricing", label: "Pricing" },
    
     { href: "/tribe", label: "Tribe" },
-   { href: "/profile", label: "Profile" },
+    { href: "/tips", label: "Tips" },
+    { href: "/profile", label: "Profile" },
     { href: "/compare", label: "Compare" },
   
     { href: "/best/step-tracking-apps", label: "Best Apps" },
