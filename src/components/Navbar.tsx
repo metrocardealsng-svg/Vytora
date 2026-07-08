@@ -38,6 +38,7 @@ export default function Navbar() {
   }
 
   const links = [
+    { href: "/progress", label: "Progress" },
     { href: "/tracker", label: "Tracker" },
     { href: "/pricing", label: "Pricing" },
    
