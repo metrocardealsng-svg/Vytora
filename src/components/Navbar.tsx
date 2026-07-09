@@ -43,6 +43,7 @@ export default function Navbar() {
     { href: "/pricing", label: "Pricing" },
    
     { href: "/tribe", label: "Tribe" },
+    { href: "/challenges", label: "Challenges" },
     { href: "/tips", label: "Tips" },
     { href: "/achievements", label: "Achievements" },
     { href: "/profile", label: "Profile" },
