@@ -27,6 +27,11 @@ export const users = pgTable("users", {
   heightCm: numeric("height_cm"),
   fitnessGoal: text("fitness_goal").default("general"),
   location: text("location"),
+  currentStreak: integer("current_streak").default(0),
+longestStreak: integer("longest_streak").default(0),
+lastActivityDate: timestamp("last_activity_date", { withTimezone: true }),
+totalSteps: integer("total_steps").default(0),
+badges: text("badges").array().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
