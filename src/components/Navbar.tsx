@@ -44,6 +44,8 @@ export default function Navbar() {
    
     { href: "/tribe", label: "Tribe" },
     { href: "/challenges", label: "Challenges" },
+    { href: "/nutrition", label: "Nutrition" },
+{ href: "/sleep", label: "Sleep" },
     { href: "/tips", label: "Tips" },
     { href: "/achievements", label: "Achievements" },
     { href: "/profile", label: "Profile" },
