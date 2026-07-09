@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     "fitness app Nigeria",
     "workout app Nigeria",
   ],
+  alternates: {
+    canonical: "https://vytora.fit",
+  },
   openGraph: {
     title: "Vytora — Live Better. Every Day.",
     description:
