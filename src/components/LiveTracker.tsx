@@ -231,9 +231,10 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           </div>
 
           {/* Map */}
-          <div className="my-6">
-            <RouteMap route={route} active={active} />
-          </div>
+       <div className="my-6 h-56 overflow-hidden rounded-2xl">
+          <RouteMap route={route} active={active} />
+       </div>
+    
 
           {/* Secondary metrics */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
