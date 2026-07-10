@@ -17,7 +17,7 @@ export default async function Home() {
       <section className="aurora relative overflow-hidden">
         <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-mint/10 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-40 h-80 w-80 rounded-full bg-teal/10 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 lg:grid-cols-2 lg:py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 lg:grid-cols-2 lg:py-16">
           <div className="animate-fade-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/10 px-3.5 py-1.5 text-xs font-semibold text-mint">
               <span className="h-1.5 w-1.5 rounded-full bg-mint" />
