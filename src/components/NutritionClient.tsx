@@ -1,24 +1,23 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import NutritionClient from "@/components/NutritionClient";
-import PlanGate from "@/components/PlanGate";
+"use client";
 
-export const dynamic = "force-dynamic";
-
-export default async function NutritionPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+export default function NutritionClient({
+  goal,
+}: {
+  goal: string;
+}) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="aurora flex-1">
-        <PlanGate requiredPlan="pro" currentPlan={user.plan} featureName="Nutrition & Meal Plans">
-          <NutritionClient goal={user.fitnessGoal || "general"} />
-        </PlanGate>
-      </main>
-      <Footer />
+    <div className="mx-auto max-w-4xl p-8">
+      <h1 className="text-3xl font-bold text-white">
+        Nutrition Planner
+      </h1>
+
+      <p className="mt-4 text-slate-300">
+        Fitness Goal: <strong>{goal}</strong>
+      </p>
+
+      <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-6">
+        Meal planner coming soon...
+      </div>
     </div>
   );
 }
