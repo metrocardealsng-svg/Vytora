@@ -188,10 +188,10 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   return (
     <div className="w-full">
       <div className="glass overflow-hidden rounded-3xl p-1">
-        <div className="rounded-[22px] bg-gradient-to-b from-ink-soft to-[#0a0e14] p-6 sm:p-8">
+       <div className="rounded-[22px] bg-gradient-to-b from-ink-soft to-[#0a0e14] p-4 sm:p-6">
           {/* Type selector */}
           <div className="mb-6 flex items-center justify-between gap-3">
-            <div className="flex overflow-x-auto rounded-xl bg-white/5 p-1 scrollbar-none" style={{WebkitOverflowScrolling:"touch"}}>
+           <div className="flex flex-wrap gap-2 rounded-xl bg-white/5 p-2">
               {(["walk", "run", "hike", "cycle", "treadmill", "gym", "yoga", "swim"] as const).map((t) => (
                 <button
                   key={t}
