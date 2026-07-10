@@ -222,8 +222,8 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
 
           {/* Primary metric: distance */}
           <div className="text-center">
-            <div className="text-[64px] font-black leading-none tracking-tighter text-white sm:text-[80px]">
-              {formatMiles(distance)}
+            <div className="text-5xl font-black leading-none tracking-tighter text-white sm:text-7xl">
+              {formatMiles(distance)}l
             </div>
             <div className="mt-1 text-sm font-semibold uppercase tracking-widest text-mint">
               Miles Covered
