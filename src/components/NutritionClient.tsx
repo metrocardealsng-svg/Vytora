@@ -1,6 +1,6 @@
 "use client";
 
-export default function NutritionClient({
+export default function NutritionClient({ goal = "general" }: { goal?: string }) {
   goal,
 }: {
   goal: string;
