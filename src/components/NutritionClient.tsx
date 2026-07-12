@@ -1,9 +1,9 @@
 "use client";
 
-export default function NutritionClient({ goal = "general" }: { goal?: string }) {
-  goal,
+export default function NutritionClient({
+  goal = "general",
 }: {
-  goal: string;
+  goal?: string;
 }) {
   return (
     <div className="mx-auto max-w-4xl p-8">
