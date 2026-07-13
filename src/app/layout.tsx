@@ -12,6 +12,14 @@ export const metadata: Metadata = {
     template: "%s | Vytora",
   },
   description:
+    manifest: "/manifest.json",
+
+themeColor: "#34e0a1",
+
+appleWebApp: {
+  capable: true,
+  statusBarStyle: "black-translucent",
+},
     "Vytora is the smart step & GPS activity tracker for people who want to move more and live better. Track your walks, distance, pace, and progress — beautifully.",
   keywords: [
     "step tracker",
