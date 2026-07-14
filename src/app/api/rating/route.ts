@@ -8,61 +8,36 @@ const supabase = createClient(
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("app_ratings")
+  const { data } = await supabase
+    .from("ratings")
     .select("rating");
 
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+  if (!data || data.length === 0) {
+    return Response.json({ average: 0, total: 0 });
   }
 
   const total = data.length;
-
-  const average =
-    total === 0
-      ? 0
-      : Number(
-          (
-            data.reduce((sum, r) => sum + r.rating, 0) / total
-          ).toFixed(1)
-        );
-
-  return Response.json({
-    average,
-    total,
-  });
+  const average = data.reduce((s, r) => s + r.rating, 0) / total;
+  return Response.json({ average: Math.round(average * 10) / 10, total });
 }
 
 export async function POST(req: Request) {
   const { userId, rating } = await req.json();
-
-  if (!userId || !rating) {
-    return Response.json(
-      { error: "Missing data" },
-      { status: 400 }
-    );
+  if (!userId || !rating || rating < 1 || rating > 5) {
+    return Response.json({ error: "Invalid" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("app_ratings")
-    .upsert(
-      {
-        user_id: userId,
-        rating,
-      },
-      {
-        onConflict: "user_id",
-      }
-    );
+  await supabase.from("ratings").upsert(
+    { user_id: userId, rating },
+    { onConflict: "user_id" }
+  );
 
-  if (error) {
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
-  }
+  // Return updated stats
+  const { data } = await supabase.from("ratings").select("rating");
+  const total = data?.length || 0;
+  const average = total > 0
+    ? Math.round((data!.reduce((s, r) => s + r.rating, 0) / total) * 10) / 10
+    : 0;
 
-  return Response.json({
-    success: true,
-  });
+  return Response.json({ success: true, average, total });
 }
