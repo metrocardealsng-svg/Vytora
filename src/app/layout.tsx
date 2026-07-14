@@ -12,7 +12,17 @@ export const metadata: Metadata = {
     default: "Vytora — Live Better. Every Day.",
     template: "%s | Vytora",
   },
-  description: "Vytora is the smart step & GPS activity tracker for people who want to move more and live better. Track your walks, distance, pace, and progress — beautifully.",
+  description: "Vytora is the smart step & GPS activity tracker for a healthier you.",
+  manifest: "/manifest.json",
+  themeColor: "#34e0a1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Vytora",
+  },
+  alternates: {
+    canonical: "https://vytora.fit",
+  },
   keywords: [
     "step tracker",
     "GPS activity tracker",
@@ -24,16 +34,6 @@ export const metadata: Metadata = {
     "fitness app Nigeria",
     "workout app Nigeria",
   ],
-  manifest: "/manifest.json",
-  themeColor: "#34e0a1",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Vytora",
-  },
-  alternates: {
-    canonical: "https://vytora.fit",
-  },
   openGraph: {
     title: "Vytora — Live Better. Every Day.",
     description: "The smart step & GPS activity tracker that helps you move more and live better.",
