@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LiveTracker from "@/components/LiveTracker";
 import { getSessionUserId } from "@/lib/auth";
-import StarRating from "@/components/StarRating";
+{userId && <StarRating userId={userId} />}
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -57,10 +57,12 @@ export default async function Home() {
                   />
                 ))}
               </div>
-              <div>
-                <span className="font-bold text-white">50,000+</span> movers
-                tracking daily
-              </div>
+            <div className="flex items-center gap-2">
+    <StarRating />
+  <span className="text-white font-semibold">
+    Rated 5.0 by early users
+  </span>
+</div>
             </div>
           </div>
 
@@ -74,11 +76,13 @@ export default async function Home() {
       <section className="border-y border-white/5 bg-ink-soft/40">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4">
           {[
-            ["12M+", "Miles tracked"],
-            ["4.9★", "Average rating"],
-            ["98%", "Feel more active"],
-            ["0", "Ads, ever"],
-          ].map(([n, l]) => (
+           {[
+  ["New", "Now in Beta"],
+  ["★★★★★", "Early user rating"],
+  ["24/7", "GPS Tracking"],
+  ["0", "Ads, ever"],
+].map(([n, l]) => (
+       
             <div key={l} className="text-center">
               <div className="text-3xl font-black text-gradient">{n}</div>
               <div className="mt-1 text-sm text-slate-400">{l}</div>
