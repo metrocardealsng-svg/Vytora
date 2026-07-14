@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LiveTracker from "@/components/LiveTracker";
 import { getSessionUserId } from "@/lib/auth";
-
+import StarRating from "@/components/StarRating";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
