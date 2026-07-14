@@ -12,9 +12,10 @@ export const metadata: Metadata = {
     template: "%s | Vytora",
   },
   description:
-    manifest: "/manifest.json",
-
+    description: "Vytora is the smart step & GPS activity tracker for a healthier you.",
+manifest: "/manifest.json",
 themeColor: "#34e0a1",
+
 
 appleWebApp: {
   capable: true,
