@@ -2,8 +2,9 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LiveTracker from "@/components/LiveTracker";
+import StarRating from "@/components/StarRating";
 import { getSessionUserId } from "@/lib/auth";
-{userId && <StarRating userId={userId} />}
+
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -29,40 +30,19 @@ export default async function Home() {
               <span className="text-gradient">Every Day.</span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-300">
-              Vytora is the smart step &amp; GPS tracker that knows exactly where
-              you&apos;re walking and every mile you cover. Beautiful stats,
-              real motivation, zero clutter.
+              Vytora is the smart step &amp; GPS tracker built for Nigerians.
+              Beautiful stats, real motivation, zero clutter.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/tracker"
-                className="btn-glow rounded-xl bg-gradient-to-r from-mint to-teal px-7 py-4 text-base font-black text-ink"
-              >
+              <Link href="/tracker" className="btn-glow rounded-xl bg-gradient-to-r from-mint to-teal px-7 py-4 text-base font-black text-ink">
                 Start Tracking Free
               </Link>
-              <Link
-                href="/pricing"
-                className="rounded-xl border border-white/15 px-7 py-4 text-base font-bold text-white hover:bg-white/5"
-              >
+              <Link href="/pricing" className="rounded-xl border border-white/15 px-7 py-4 text-base font-bold text-white hover:bg-white/5">
                 View Pricing
               </Link>
             </div>
-            <div className="mt-8 flex items-center gap-6 text-sm text-slate-400">
-              <div className="flex -space-x-2">
-                {["#34e0a1", "#c8ff5a", "#2dd4bf", "#5eead4"].map((c, i) => (
-                  <span
-                    key={i}
-                    className="h-8 w-8 rounded-full border-2 border-[#06080c]"
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
-            <div className="flex items-center gap-2">
-    <StarRating />
-  <span className="text-white font-semibold">
-    Rated 5.0 by early users
-  </span>
-</div>
+            <div className="mt-8">
+              <StarRating userId={userId || undefined} />
             </div>
           </div>
 
@@ -76,17 +56,18 @@ export default async function Home() {
       <section className="border-y border-white/5 bg-ink-soft/40">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4">
           {[
-          {[
-  ["New", "Now in Beta"],
-  ["★★★★★", "Early user rating"],
-  ["24/7", "GPS Tracking"],
-  ["0", "Ads, ever"],
-].map(([n, l]) => (
-  <div key={l} className="text-center">
-    <div className="text-3xl font-black text-gradient">{n}</div>
-    <div className="mt-1 text-sm text-slate-400">{l}</div>
-  </div>
-))}
+            ["New", "Now in Beta"],
+            ["★★★★★", "Early user rating"],
+            ["24/7", "GPS Tracking"],
+            ["0", "Ads, ever"],
+          ].map(([n, l]) => (
+            <div key={l} className="text-center">
+              <div className="text-3xl font-black text-gradient">{n}</div>
+              <div className="mt-1 text-sm text-slate-400">{l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* FEATURES */}
       <section className="mx-auto max-w-7xl px-5 py-20">
@@ -101,10 +82,7 @@ export default async function Home() {
         </div>
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {features.map((f) => (
-            <div
-              key={f.title}
-              className="glass group rounded-2xl p-6 transition-transform hover:-translate-y-1"
-            >
+            <div key={f.title} className="glass group rounded-2xl p-6 transition-transform hover:-translate-y-1">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-mint/20 to-teal/20 text-2xl">
                 {f.icon}
               </div>
@@ -146,8 +124,7 @@ export default async function Home() {
                 Why movers switch to Vytora
               </h2>
               <p className="mt-4 text-slate-400">
-                No paywalled maps. No cluttered feed. Just the cleanest, fastest
-                tracking experience — with the insights that actually help you improve.
+                No paywalled maps. No cluttered feed. Built for Nigeria.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/compare/vytora-vs-strava" className="rounded-lg bg-mint/10 px-4 py-2 text-sm font-semibold text-mint hover:bg-mint/20">
@@ -186,7 +163,7 @@ export default async function Home() {
             Ready to live better?
           </h2>
           <p className="relative mx-auto mt-4 max-w-lg text-lg font-medium text-ink/80">
-            Join thousands of people building healthier habits, one mile at a time.
+            Join Nigerians building healthier habits, one mile at a time.
             Free to start — no credit card needed.
           </p>
           <div className="relative mt-8 flex flex-wrap justify-center gap-4">
@@ -206,16 +183,16 @@ export default async function Home() {
 }
 
 const features = [
-  { icon: "📍", title: "Precise GPS routing", body: "Real-time location tracking maps every step of your route and filters GPS noise for accurate mileage — no inflated numbers." },
-  { icon: "👟", title: "Smart step counting", body: "Distance-based step estimation and live pace so you always know how far and how fast you've gone." },
-  { icon: "🔥", title: "Calorie & pace insights", body: "Automatic calorie burn, average pace, and speed for every walk, run, or hike you complete." },
-  { icon: "📈", title: "Progress dashboard", body: "Weekly totals, streaks, and personal records that keep you coming back and moving forward." },
-  { icon: "🗺️", title: "Route history", body: "Every saved activity keeps its map so you can revisit and compare your favorite routes." },
-  { icon: "⚡", title: "Blazing fast & clean", body: "A distraction-free interface that loads instantly. No ads, no clutter — just your progress." },
+  { icon: "📍", title: "Precise GPS routing", body: "Real-time location tracking maps every step of your route and filters GPS noise for accurate mileage." },
+  { icon: "👟", title: "Smart step counting", body: "Accelerometer-based step detection and live pace so you always know how far and how fast." },
+  { icon: "🔥", title: "Calorie & pace insights", body: "Automatic calorie burn, average pace, and speed for every walk, run, or hike." },
+  { icon: "📈", title: "Progress dashboard", body: "Weekly totals, streaks, and personal records that keep you coming back." },
+  { icon: "🗺️", title: "Route history", body: "Every saved activity keeps its map so you can revisit your favorite routes." },
+  { icon: "⚡", title: "Blazing fast & clean", body: "A distraction-free interface that loads instantly. No ads, no clutter." },
 ];
 
 const steps = [
-  { title: "Pick your activity", body: "Choose walk, run, or hike and hit start. Vytora locks onto GPS instantly." },
+  { title: "Pick your activity", body: "Choose walk, run, hike, gym, yoga and more. Hit start." },
   { title: "Move your body", body: "We track your live route, distance, steps, pace, and calories as you go." },
   { title: "Save & celebrate", body: "Finish to save your activity and watch your stats and streaks grow." },
 ];
@@ -223,7 +200,7 @@ const steps = [
 const compareRows = [
   { label: "Free live GPS maps", them: false },
   { label: "No ads, ever", them: false },
-  { label: "Accurate step estimation", them: true },
+  { label: "Nigerian meal plans + AI", them: false },
   { label: "Clean, fast interface", them: true },
   { label: "Streaks & personal records", them: true },
 ];
