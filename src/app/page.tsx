@@ -76,20 +76,17 @@ export default async function Home() {
       <section className="border-y border-white/5 bg-ink-soft/40">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4">
           {[
-           {[
+          {[
   ["New", "Now in Beta"],
   ["★★★★★", "Early user rating"],
   ["24/7", "GPS Tracking"],
   ["0", "Ads, ever"],
 ].map(([n, l]) => (
-       
-            <div key={l} className="text-center">
-              <div className="text-3xl font-black text-gradient">{n}</div>
-              <div className="mt-1 text-sm text-slate-400">{l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+  <div key={l} className="text-center">
+    <div className="text-3xl font-black text-gradient">{n}</div>
+    <div className="mt-1 text-sm text-slate-400">{l}</div>
+  </div>
+))}
 
       {/* FEATURES */}
       <section className="mx-auto max-w-7xl px-5 py-20">
