@@ -83,9 +83,12 @@ export async function POST(req: Request) {
     const data = await geminiRes.json();
 
     if (!geminiRes.ok) {
-      console.error("Gemini error:", geminiRes.status, JSON.stringify(data));
-      return Response.json({ reply: "Vyto is resting. Try again in a moment!" });
-    }
+  console.error("Gemini error:", geminiRes.status, JSON.stringify(data));
+
+  return Response.json({
+    reply: JSON.stringify(data)
+  });
+}
 
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!reply) {
