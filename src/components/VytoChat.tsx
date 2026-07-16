@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
   "What should I eat after a 5km run?",
   "Give me a 7-day Nigerian meal plan to lose weight",
-  "Best military calisthenics routine for beginners",
-  "How to do 100 push-ups a day challenge",
+  "Best military calisthenics for beginners",
+  "How to run faster in Lagos heat?",
 ];
 
 export default function VytoChat() {
@@ -61,24 +60,26 @@ export default function VytoChat() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button - uses inline SVG, no image dependency */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-5 z-50 overflow-hidden rounded-full shadow-lg shadow-mint/30 transition-transform hover:scale-105 active:scale-95"
-        style={{ width: 56, height: 56 }}
+        className="fixed bottom-6 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg shadow-mint/30 transition-transform hover:scale-105 active:scale-95"
+        style={{ background: "linear-gradient(135deg, #34e0a1, #2dd4bf)" }}
         aria-label="Open Vyto AI"
       >
         {open ? (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-mint to-teal">
-            <svg viewBox="0 0 24 24" className="h-6 w-6 text-ink" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </div>
+          <svg viewBox="0 0 24 24" className="h-6 w-6 text-ink" fill="none" stroke="#06080c" strokeWidth="2.5">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
         ) : (
-          <div className="relative h-full w-full">
-            <Image src="/icon-192.png" alt="Vyto AI" width={56} height={56} className="rounded-full" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-green-400 text-[8px] font-black text-ink">AI</span>
-          </div>
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#06080c" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12h4l2 6 4-14 2 8h6" />
+          </svg>
+        )}
+        {!open && (
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-400 text-[8px] font-black text-ink">
+            AI
+          </span>
         )}
       </button>
 
@@ -88,7 +89,11 @@ export default function VytoChat() {
           style={{ height: "480px" }}>
           {/* Header */}
           <div className="flex items-center gap-3 rounded-t-3xl border-b border-white/5 bg-gradient-to-r from-mint/10 to-teal/5 px-4 py-3">
-            <Image src="/icon-192.png" alt="Vyto" width={36} height={36} className="rounded-full" />
+            <div className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #34e0a1, #2dd4bf)" }}>
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#06080c" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12h4l2 6 4-14 2 8h6" />
+              </svg>
+            </div>
             <div>
               <p className="text-sm font-black text-white">Vyto</p>
               <p className="text-[10px] text-slate-400">Vytora AI Fitness Assistant</p>
@@ -102,11 +107,15 @@ export default function VytoChat() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} gap-2`}>
                 {m.role === "assistant" && (
-                  <Image src="/icon-192.png" alt="Vyto" width={24} height={24} className="rounded-full mr-2 flex-shrink-0 self-end mb-1" />
+                  <div className="h-6 w-6 rounded-full flex-shrink-0 self-end mb-1 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #34e0a1, #2dd4bf)" }}>
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="#06080c" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M3 12h4l2 6 4-14 2 8h6" />
+                    </svg>
+                  </div>
                 )}
-                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   m.role === "user"
                     ? "bg-mint text-ink font-medium rounded-br-sm"
                     : "bg-white/8 text-slate-200 rounded-bl-sm"
@@ -117,7 +126,11 @@ export default function VytoChat() {
             ))}
             {loading && (
               <div className="flex justify-start gap-2">
-                <Image src="/icon-192.png" alt="Vyto" width={24} height={24} className="rounded-full flex-shrink-0 self-end mb-1" />
+                <div className="h-6 w-6 rounded-full flex-shrink-0 self-end mb-1 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #34e0a1, #2dd4bf)" }}>
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="#06080c" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M3 12h4l2 6 4-14 2 8h6" />
+                  </svg>
+                </div>
                 <div className="rounded-2xl rounded-bl-sm bg-white/8 px-4 py-3">
                   <div className="flex gap-1">
                     {[0, 1, 2].map((i) => (
