@@ -18,26 +18,26 @@ export default async function Home() {
       <section className="aurora relative overflow-hidden">
         <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-mint/10 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-40 h-80 w-80 rounded-full bg-teal/10 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 lg:grid-cols-2 lg:py-16">
+        <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 py-6 lg:grid-cols-2 lg:py-16">
           <div className="animate-fade-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/10 px-3.5 py-1.5 text-xs font-semibold text-mint">
               <span className="h-1.5 w-1.5 rounded-full bg-mint" />
               GPS step tracking, reimagined
             </span>
-            <h1 className="mt-6 text-5xl font-black leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-7xl">
               Live Better.
               <br />
               <span className="text-gradient">Every Day.</span>
             </h1>
-            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-300">
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300">
               Vytora is the smart step &amp; GPS tracker built for Nigerians.
               Beautiful stats, real motivation, zero clutter.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link href="/tracker" className="btn-glow rounded-xl bg-gradient-to-r from-mint to-teal px-7 py-4 text-base font-black text-ink">
+              <Link href="/tracker" className="btn-glow rounded-xl bg-gradient-to-r from-mint to-teal px-5 py-3.5 text-sm font-black text-ink sm:px-7 sm:py-4 sm:text-base">
                 Start Tracking Free
               </Link>
-              <Link href="/pricing" className="rounded-xl border border-white/15 px-7 py-4 text-base font-bold text-white hover:bg-white/5">
+              <Link href="/pricing" className="rounded-xl border border-white/15 px-5 py-3.5 text-sm font-bold text-white sm:px-7 sm:py-4 sm:text-base hover:bg-white/5">
                 View Pricing
               </Link>
             </div>
