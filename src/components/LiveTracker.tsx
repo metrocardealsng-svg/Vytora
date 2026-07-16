@@ -380,9 +380,11 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           )}
 
           {/* Map */}
-          <div className="my-5 h-56 overflow-hidden rounded-2xl">
-            <RouteMap route={route} active={active} />
-          </div>
+         <div className="my-5 w-full max-w-full h-56 overflow-hidden rounded-2xl">
+  <div className="relative h-full w-full overflow-hidden">
+    <RouteMap route={route} active={active} />
+  </div>
+</div>
 
           {/* Metrics */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
