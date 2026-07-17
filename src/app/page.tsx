@@ -117,7 +117,7 @@ export default async function Home() {
 
       {/* COMPARE TEASER */}
       <section className="mx-auto max-w-7xl px-5 py-20">
-        <div className="glass overflow-hidden rounded-3xl">
+        <div className="glass mx-auto max-w-sm overflow-hidden rounded-3xl p-1 sm:max-w-none">
           <div className="grid items-center gap-8 p-8 md:grid-cols-2 md:p-12">
             <div>
               <h2 className="text-3xl font-black tracking-tight text-white">
