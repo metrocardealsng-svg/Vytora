@@ -380,7 +380,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           )}
 
           {/* Map */}
-         <div className="my-5 w-full max-w-full h-56 overflow-hidden rounded-2xl">
+         <div className="my-4 w-full overflow-hidden rounded-2xl" style={{ height: "clamp(140px, 35vw, 220px)" }}>
   <div className="relative h-full w-full overflow-hidden">
     <RouteMap route={route} active={active} />
   </div>
