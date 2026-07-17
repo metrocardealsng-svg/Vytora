@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const prompt = `${SYSTEM_PROMPT}\n\nUser: ${lastMessage.content}\n\nVyto:`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
       {
         method: "POST",
         headers: {
