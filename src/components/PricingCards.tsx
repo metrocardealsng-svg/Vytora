@@ -13,7 +13,7 @@ type Plan = {
 };
 
 const PAGA_NUMBER = "0509704223";
-const PAGA_NAME = "Nnabuchi Michel Caleb";
+const PAGA_NAME = "Vytora";
 
 const NGN_TO_USD: Record<number, string> = {
   4500: "2.80",
