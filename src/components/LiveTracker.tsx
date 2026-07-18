@@ -308,7 +308,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const active = status === "tracking";
 
   return (
-    <div className="w-full relative">
+    <div className="w-full relative overflow-hidden">
       {/* Achievement popup */}
       {achievement && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-xs w-full px-4"
@@ -380,7 +380,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           )}
 
           {/* Map */}
-         <div className="my-4 w-full overflow-hidden rounded-2xl" style={{ height: "clamp(140px, 35vw, 220px)" }}>
+         <div className="my-4 overflow-hidden rounded-2xl" style={{ height: "clamp(140px, 35vw, 200px)", maxWidth: "100%", width: "100%" }}>
   <div className="relative h-full w-full overflow-hidden">
     <RouteMap route={route} active={active} />
   </div>
