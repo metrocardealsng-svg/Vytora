@@ -46,7 +46,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="animate-fade-up lg:pl-6" style={{ animationDelay: "0.1s" }}>
+          <div className="hidden lg:block animate-fade-up lg:pl-6" style={{ animationDelay: "0.1s" }}>
             <LiveTracker authed={Boolean(userId)} />
           </div>
         </div>
