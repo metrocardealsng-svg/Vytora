@@ -5,6 +5,7 @@ import LiveTracker from "@/components/LiveTracker";
 import StarRating from "@/components/StarRating";
 import { getSessionUserId } from "@/lib/auth";
 import AIMealPlanner from "@/components/home/AIMealPlanner";
+import Testimonials from "@/components/home/Testimonials";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -114,7 +115,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
+    <Testimonials />
       {/* COMPARE TEASER */}
       <section className="mx-auto max-w-7xl px-5 py-20">
         <div className="glass mx-auto max-w-sm overflow-hidden rounded-3xl p-1 sm:max-w-none">
