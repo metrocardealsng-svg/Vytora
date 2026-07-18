@@ -1,23 +1,26 @@
 export const testimonials = [
   {
-    id: 1,
-    name: "David O.",
+    name: "David A.",
     location: "Abuja",
+    image: "/avatars/user1.jpg",
     rating: 5,
-    text: "Finally a fitness tracker built with Nigerians in mind. The interface is beautiful and incredibly easy to use."
+    review:
+      "I've tried many fitness apps but Vytora feels built for Nigerians. It's simple and very accurate."
   },
   {
-    id: 2,
-    name: "Ada C.",
+    name: "Sarah M.",
     location: "Lagos",
+    image: "/avatars/user2.jpg",
     rating: 5,
-    text: "The GPS tracking is fast and the design feels more premium than most fitness apps I've tried."
+    review:
+      "The AI meal planner is amazing. Finally an app that understands Nigerian food."
   },
   {
-    id: 3,
-    name: "Michael E.",
+    name: "Chinedu O.",
     location: "Port Harcourt",
+    image: "/avatars/user3.jpg",
     rating: 5,
-    text: "Can't wait for the AI Meal Planner. This app has huge potential."
+    review:
+      "Tracking my walks has never been easier. Beautiful interface."
   }
 ];
