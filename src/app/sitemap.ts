@@ -3,7 +3,7 @@ import { competitors, categories } from "@/lib/seo-data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://vytora.fit";
-  const staticPaths = ["", "/tracker", "/pricing", "/compare", "/login", "/signup"];
+  const staticPaths = ["", "/tracker", "/blog", "/pricing", "/compare", "/login", "/signup"];
 
   const now = new Date();
 
