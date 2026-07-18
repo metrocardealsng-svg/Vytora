@@ -15,7 +15,7 @@ export default async function NutritionPage() {
       <Navbar />
       <main className="aurora flex-1">
         <PlanGate requiredPlan="pro" currentPlan={user.plan} featureName="Nutrition & Meal Plans">
-        <NutritionClient />
+          <NutritionClient goal={user.fitnessGoal || "general"} />
         </PlanGate>
       </main>
       <Footer />
