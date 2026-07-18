@@ -1,37 +1,31 @@
-interface Props{
-title:string
-subtitle?:string
-center?:boolean
+interface Props {
+  badge?: string;
+  title: string;
+  subtitle?: string;
 }
 
 export default function SectionTitle({
-title,
-subtitle,
-center=true
-}:Props){
+  badge,
+  title,
+  subtitle,
+}: Props) {
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      {badge && (
+        <span className="mb-4 inline-flex rounded-full bg-mint/10 px-4 py-1 text-sm font-semibold text-mint">
+          {badge}
+        </span>
+      )}
 
-return(
+      <h2 className="text-4xl font-black tracking-tight text-white">
+        {title}
+      </h2>
 
-<div className={`${center ? "text-center" : ""} mb-12`}>
-
-<h2 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-
-{title}
-
-</h2>
-
-{subtitle && (
-
-<p className="mt-4 text-slate-400 max-w-2xl mx-auto leading-relaxed">
-
-{subtitle}
-
-</p>
-
-)}
-
-</div>
-
-)
-
+      {subtitle && (
+        <p className="mt-4 text-lg text-slate-400">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
 }
