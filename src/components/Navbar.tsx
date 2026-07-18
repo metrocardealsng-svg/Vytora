@@ -41,7 +41,7 @@ export default function Navbar() {
     { href: "/progress", label: "Progress" },
     { href: "/tracker", label: "Tracker" },
     { href: "/pricing", label: "Pricing" },
-   
+    { href: "/blog", label: "Blog" },
     { href: "/tribe", label: "Tribe" },
     { href: "/challenges", label: "Challenges" },
     { href: "/nutrition", label: "Nutrition" },
