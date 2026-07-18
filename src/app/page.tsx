@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import LiveTracker from "@/components/LiveTracker";
 import StarRating from "@/components/StarRating";
 import { getSessionUserId } from "@/lib/auth";
-
+import AIMealPlanner from "@/components/home/AIMealPlanner";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -68,7 +68,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
-
+     <AIMealPlanner />     
       {/* FEATURES */}
       <section className="mx-auto max-w-7xl px-5 py-20">
         <div className="mx-auto max-w-2xl text-center">
