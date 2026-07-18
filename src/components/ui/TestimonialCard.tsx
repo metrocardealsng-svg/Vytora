@@ -2,7 +2,7 @@ interface Props {
   name: string;
   location: string;
   rating: number;
-  text: string;
+  review: string;
 }
 
 export default function TestimonialCard({
