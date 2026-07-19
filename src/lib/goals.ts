@@ -5,13 +5,17 @@ export const totalXP = (goals: Goal[]) => {
   }, 0);
 };
 export const updateGoalProgress = (
-  goalId: string,
-  progress: number,
-  goals: Goal[]
+  goals: Goal[],
+  category: string,
+  progress: number
 ) => {
   return goals.map((goal) =>
-    goal.id === goalId
-      ? { ...goal, progress }
+    goal.category === category
+      ? {
+          ...goal,
+          progress,
+          completed: progress >= goal.target,
+        }
       : goal
   );
 };
