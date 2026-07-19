@@ -1,35 +1,65 @@
 "use client";
 
-interface Props {
-  progress: number;
-  target: number;
-  color: string;
-}
-
 export default function GoalProgress({
-  progress,
-  target,
-  color,
-}: Props) {
-  const percent = Math.min((progress / target) * 100, 100);
 
-  return (
-    <div className="mt-4">
-      <div className="mb-2 flex justify-between text-sm text-slate-400">
-        <span>{progress}</span>
+current,
 
-        <span>{target}</span>
-      </div>
+goal,
 
-      <div className="h-3 w-full overflow-hidden rounded-full bg-slate-800">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${percent}%`,
-            background: color,
-          }}
-        />
-      </div>
-    </div>
-  );
+label
+
+}:{
+
+current:number
+
+goal:number
+
+label:string
+
+}){
+
+const percent=Math.min((current/goal)*100,100);
+
+return(
+
+<div className="mb-6">
+
+<div className="flex justify-between">
+
+<span className="text-white">
+
+{label}
+
+</span>
+
+<span className="text-mint">
+
+{current}/{goal}
+
+</span>
+
+</div>
+
+<div className="mt-2 h-4 overflow-hidden rounded-full bg-slate-800">
+
+<div
+
+style={{
+
+width:`${percent}%`
+
+}}
+
+className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-700"
+
+>
+
+</div>
+
+</div>
+
+</div>
+
+)
+
 }
