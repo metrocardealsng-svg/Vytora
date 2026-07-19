@@ -4,6 +4,17 @@ export const totalXP = (goals: Goal[]) => {
     return total + (goal.xp || 0);
   }, 0);
 };
+export const updateGoalProgress = (
+  goalId: string,
+  progress: number,
+  goals: Goal[]
+) => {
+  return goals.map((goal) =>
+    goal.id === goalId
+      ? { ...goal, progress }
+      : goal
+  );
+};
 export const defaultGoals: Goal[] = [
   {
     id: crypto.randomUUID(),
