@@ -7,7 +7,6 @@ import BadgeGrid from "./BadgeGrid";
 import StreakCard from "./StreakCard";
 import { Goal } from "@/types/goals";
 import {
-  completedGoals,
   totalXP,
   updateGoalProgress,
 } from "@/lib/goals";
