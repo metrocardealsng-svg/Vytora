@@ -45,7 +45,7 @@ export default function Footer() {
         </p>
         <p className="mt-1 text-center text-xs text-slate-600">
           This app is owned by{" "}
-          <span className="text-slate-500">MetroCarDeals Ltd.</span>
+          <span className="text-slate-500">Metrothecreator.</span>
         </p>
       </div>
     </footer>
