@@ -20,6 +20,11 @@ export default function GoalsPage() {
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
 
           <GoalCard />
+          title="Daily Steps"
+          progress={5600}
+          target={10000}
+          unit="steps"
+/>
 
           <LevelCard xp={350} />
 
