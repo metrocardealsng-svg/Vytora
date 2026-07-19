@@ -31,3 +31,35 @@ export interface Goal {
 
   createdAt: string;
 }
+
+export interface Badge {
+  id: string;
+
+  title: string;
+
+  description: string;
+
+  icon: string;
+
+  unlocked: boolean;
+
+  unlockedAt?: string;
+}
+
+export interface UserLevel {
+  level: number;
+
+  xp: number;
+
+  nextLevelXP: number;
+
+  title: string;
+}
+
+export interface DailyStreak {
+  current: number;
+
+  longest: number;
+
+  lastCompleted: string;
+}
