@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": { 
+    "framer-motion": "^12.23.12",
     "@anthropic-ai/sdk": "^0.30.0",
     "@supabase/supabase-js": "^2.45.4",
     "@types/bcryptjs": "^2.4.6",
