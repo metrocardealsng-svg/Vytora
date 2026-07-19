@@ -1,5 +1,9 @@
-import { Goal } from "@/types/goal";
-
+import { Goal } from "@/types/goals";
+export const totalXP = (goals: Goal[]) => {
+  return goals.reduce((total, goal) => {
+    return total + (goal.xp || 0);
+  }, 0);
+};
 export const defaultGoals: Goal[] = [
   {
     id: crypto.randomUUID(),
