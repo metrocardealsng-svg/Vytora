@@ -1,4 +1,4 @@
-import { Goal } from "@/types/goal";
+import { Goal } from "@/types/goals";
 
 export function updateGoalProgress(
   goals: Goal[],
