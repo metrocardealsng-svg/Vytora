@@ -6,18 +6,9 @@ import {
   formatDuration,
   formatMiles,
   formatPace,
-} from "@/lib/format";
-import {
-  haversineDistance,
-  isValidGPSPoint,
-  isRealisticJump,
+  haversine,
   metersToMiles,
-  calculatePaceSecPerMile,
-  calculateSpeedMph,
-  isValidAccumulatedDistance,
-  MIN_DISTANCE_DELTA,
-  GPS_ACCURACY_THRESHOLD,
-} from "@/lib/distance";
+} from "@/lib/format";
 import type { LatLng } from "@/db/schema";
 import RouteMap from "./RouteMap";
 
@@ -63,11 +54,9 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const [activityType, setActivityType] = useState<"walk" | "run" | "hike" | "cycle" | "treadmill" | "gym" | "yoga" | "swim">("walk");
   const [achievement, setAchievement] = useState<string | null>(null);
   const [stepCount, setStepCount] = useState(0);
-  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   const watchId = useRef<number | null>(null);
   const lastPoint = useRef<LatLng | null>(null);
-  const lastAccuracy = useRef<number | null>(null);
   const startTime = useRef<number>(0);
   const accumulated = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -162,53 +151,52 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
 
   useEffect(() => () => stopWatch(), [stopWatch]);
 
+  const speedBufferRef = useRef<number[]>([]);
+  
   const handlePosition = useCallback((pos: GeolocationPosition) => {
     setGpsReady(true);
-    const accuracy = pos.coords.accuracy ?? GPS_ACCURACY_THRESHOLD.POOR_SIGNAL;
-    setGpsAccuracy(accuracy);
+    
+    // Strict accuracy gate - Nigeria urban GPS can be noisy
+    if (pos.coords.accuracy && pos.coords.accuracy > 25) return;
 
     const point: LatLng = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
       t: Date.now(),
     };
-    
-    // Validate GPS quality using production-ready function
-    if (!isValidGPSPoint({
-      lat: point.lat,
-      lng: point.lng,
-      accuracy,
-      timestamp: point.t,
-    }, true)) {
-      return;
-    }
 
     if (lastPoint.current) {
-      // Use production-ready realistic jump detection
-      if (!isRealisticJump(lastPoint.current, point)) {
-        return;
-      }
-
-      const d = haversineDistance(lastPoint.current, point);
+      const d = haversine(lastPoint.current, point);
+      const timeDiff = (point.t - lastPoint.current.t) / 1000; // seconds
       
-      // Only accumulate if distance exceeds noise floor
-      if (d >= MIN_DISTANCE_DELTA) {
+      // Speed sanity check: max realistic speed in m/s
+      // Walking: ~2m/s, Running: ~6m/s, Cycling: ~12m/s
+      const maxSpeed = 12; // m/s
+      const speed = timeDiff > 0 ? d / timeDiff : 0;
+      
+      // Buffer recent speeds for smoothing
+      speedBufferRef.current.push(speed);
+      if (speedBufferRef.current.length > 5) speedBufferRef.current.shift();
+      const avgSpeed = speedBufferRef.current.reduce((a, b) => a + b, 0) / speedBufferRef.current.length;
+      
+      // Only count distance if:
+      // 1. At least 3m moved (filters GPS jitter when standing still)
+      // 2. Speed is realistic (filters teleportation jumps)
+      // 3. Not too far (filters bad readings)
+      if (d >= 3 && d < 100 && speed <= maxSpeed && avgSpeed <= maxSpeed) {
         setDistance((prev) => {
           const next = prev + d;
-          // Validate accumulated distance is sane
-          if (isValidAccumulatedDistance(next)) {
-            checkDistanceMilestone(next);
-            return next;
-          }
-          return prev;
+          checkDistanceMilestone(next);
+          return next;
         });
         setRoute((prev) => [...prev, point]);
         lastPoint.current = point;
-        lastAccuracy.current = accuracy;
+      } else if (d >= 3 && d < 100 && speed <= maxSpeed * 1.5) {
+        // Borderline reading - update position but don't count distance
+        lastPoint.current = point;
       }
     } else {
       lastPoint.current = point;
-      lastAccuracy.current = accuracy;
       setRoute([point]);
     }
   }, []);
@@ -236,7 +224,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     setError(null);
     setMessage(null);
     setStepCount(0);
-    setGpsAccuracy(null);
     triggeredMilestones.current.clear();
     distanceMilestonesTriggered.current.clear();
     const ok = beginWatch();
@@ -275,9 +262,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     setDistance(0);
     setElapsed(0);
     setStepCount(0);
-    setGpsAccuracy(null);
     lastPoint.current = null;
-    lastAccuracy.current = null;
     accumulated.current = 0;
     triggeredMilestones.current.clear();
     distanceMilestonesTriggered.current.clear();
@@ -296,8 +281,8 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const calories = activityType === "gym" || activityType === "yoga"
     ? Math.round((elapsed / 60) * (calorieRate[activityType] || 95))
     : Math.round(miles * (calorieRate[activityType] || 95));
-  const paceSecPerMile = calculatePaceSecPerMile(elapsed, distance);
-  const speedMph = calculateSpeedMph(elapsed, distance);
+  const paceSecPerMile = miles > 0.01 ? elapsed / miles : 0;
+  const speedMph = elapsed > 0 ? (miles / (elapsed / 3600)) : 0;
 
   async function finish() {
     stopWatch();
@@ -306,14 +291,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
       setMessage("Sign up free to save this activity and track your progress.");
       return;
     }
-    
-    // Final validation before submission
-    if (!isValidAccumulatedDistance(distance)) {
-      setStatus("done");
-      setError("Invalid distance recorded. Please try again.");
-      return;
-    }
-
     setStatus("saving");
     try {
       const res = await fetch("/api/activities", {
@@ -322,7 +299,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
         body: JSON.stringify({
           type: activityType,
           title: `${activityType[0].toUpperCase()}${activityType.slice(1)} • ${formatMiles(distance)} mi`,
-          distanceMeters: Math.round(distance * 1000) / 1000, // Round to mm precision
+          distanceMeters: distance,
           durationSeconds: Math.round(elapsed),
           steps: finalSteps,
           calories,
@@ -397,21 +374,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
             </div>
           </div>
 
-          {/* GPS Accuracy indicator */}
-          {gpsAccuracy !== null && (
-            <div className="mb-4 text-xs text-center font-semibold">
-              <span className={`inline-block px-3 py-1 rounded-full ${
-                gpsAccuracy <= GPS_ACCURACY_THRESHOLD.HIGH_CONFIDENCE
-                  ? 'bg-mint/20 text-mint'
-                  : gpsAccuracy <= GPS_ACCURACY_THRESHOLD.ACCEPTABLE
-                  ? 'bg-yellow-500/20 text-yellow-300'
-                  : 'bg-red-500/20 text-red-300'
-              }`}>
-                GPS ±{Math.round(gpsAccuracy)}m
-              </span>
-            </div>
-          )}
-
           {/* Primary metric */}
           <div className="text-center">
             <div className="text-5xl font-black leading-none tracking-tighter text-white sm:text-7xl">
@@ -439,11 +401,11 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
           )}
 
           {/* Map */}
-          <div className="my-4 overflow-hidden rounded-2xl" style={{ height: "clamp(140px, 35vw, 200px)", maxWidth: "100%", width: "100%" }}>
-            <div className="relative h-full w-full overflow-hidden">
-              <RouteMap route={route} active={active} />
-            </div>
-          </div>
+         <div className="my-4 overflow-hidden rounded-2xl" style={{ height: "clamp(140px, 35vw, 200px)", maxWidth: "100%", width: "100%" }}>
+  <div className="relative h-full w-full overflow-hidden">
+    <RouteMap route={route} active={active} />
+  </div>
+</div>
 
           {/* Metrics */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
