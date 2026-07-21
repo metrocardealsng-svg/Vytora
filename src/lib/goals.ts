@@ -1,15 +1,33 @@
 import { Goal } from "@/types/goals";
 
-export const totalXP = (goals: Goal[]) => {
-  return goals.reduce((total, goal) => {
-    return total + (goal.xp || 0);
-  }, 0);
-};
+export function updateGoalProgress(
+  goals: Goal[],
+  category: Goal["category"],
+  amount: number
+): Goal[] {
+  return goals.map((goal) => {
+    if (goal.category !== category) return goal;
 
-export const completedGoals = (goals: Goal[]) => {
+    const progress = Math.min(goal.progress + amount, goal.target);
+
+    return {
+      ...goal,
+      progress,
+      completed: progress >= goal.target,
+    };
+  });
+}
+
+export function completedGoals(goals: Goal[]): Goal[] {
   return goals.filter((goal) => goal.completed);
-};
+}
 
-export const activeGoals = (goals: Goal[]) => {
+export function activeGoals(goals: Goal[]): Goal[] {
   return goals.filter((goal) => !goal.completed);
-};
+}
+
+export function totalXP(goals: Goal[]): number {
+  return goals
+    .filter((goal) => goal.completed)
+    .reduce((xp, goal) => xp + goal.xp, 0);
+}
