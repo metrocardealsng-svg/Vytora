@@ -4,7 +4,7 @@ import { memo } from "react";
 import { formatMiles } from "@/lib/format";
 import type { LatLng } from "@/db/schema";
 import type { Status } from "./types";
-import RouteMap from "./RouteMap";
+import RouteMap from "../RouteMap";
 
 interface TrackerMapProps {
   distanceMeters: number;
