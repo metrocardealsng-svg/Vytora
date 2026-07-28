@@ -17,7 +17,11 @@ import { ArrowRight } from "lucide-react";
  *   <CTA />
  */
 
-export default function CTA() {
+type CTAProps = {
+  userId?: string | null;
+};
+
+export default function CTA({ userId }: CTAProps) {
   return (
     <section className="relative w-full overflow-hidden px-6 py-32 sm:px-10 lg:px-16">
       {/* Localized glow backdrop, separate from the global AnimatedBackground */}
@@ -48,10 +52,10 @@ export default function CTA() {
         </p>
 
         <Link
-          href="/download"
+          href={userId ? "/dashboard" : "/download"}
           className="group mt-10 inline-flex items-center justify-center gap-2 rounded-full bg-[#34E0A1] px-8 py-4 text-sm font-semibold text-[#05070B] transition-all duration-300 hover:shadow-[0_0_36px_4px_rgba(52,224,161,0.45)]"
         >
-          Download Vytora
+          {userId ? "Go to Dashboard" : "Download Vytora"}
           <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
         </Link>
       </motion.div>
