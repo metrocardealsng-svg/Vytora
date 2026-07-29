@@ -8,8 +8,6 @@ import {
   useSpring,
   useReducedMotion,
 } from "framer-motion";
-import type { StatsResponse } from "@/app/api/stats/route";
-
 /**
  * Stats
  *
@@ -17,6 +15,14 @@ import type { StatsResponse } from "@/app/api/stats/route";
  * Supabase) then animates them counting upward when they scroll into view.
  * Shows skeleton placeholders while loading.
  */
+
+type StatsResponse = {
+  total_steps: number;
+  total_activities: number;
+  goal_completion_rate: number;
+  avg_rating: number;
+  total_users: number;
+};
 
 type Stat = {
   id: string;
