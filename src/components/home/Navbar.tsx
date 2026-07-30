@@ -2,18 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 /**
- * Navbar — homepage version
- *
- * Uses your existing logo from /public/logo.png (same one your old
- * Navbar uses). Update the src below if your logo file has a
- * different name or path.
- *
- * All pages are linked so nothing is hidden from visitors.
+ * Navbar — uses the exact same logo as the original src/components/Navbar.tsx
+ * (mint gradient box + star SVG + "Vytora" text). No image file required.
  */
 
 const NAV_LINKS = [
@@ -25,17 +19,18 @@ const NAV_LINKS = [
 ];
 
 const MOBILE_LINKS = [
-  { label: "Features", href: "#features" },
+  { label: "Home", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Tracker", href: "/tracker" },
+  { label: "Challenges", href: "/challenges" },
   { label: "Nutrition", href: "/nutrition" },
   { label: "Sleep", href: "/sleep" },
-  { label: "Challenges", href: "/challenges" },
   { label: "Progress", href: "/progress" },
   { label: "Achievements", href: "/achievements" },
+  { label: "Tribe", href: "/tribe" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
   { label: "Tips", href: "/tips" },
-  { label: "Tribe", href: "/tribe" },
 ];
 
 export default function Navbar() {
@@ -50,30 +45,30 @@ export default function Navbar() {
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "border-b border-white/10 bg-[#05070B]/70 backdrop-blur-xl"
+          ? "border-b border-white/10 bg-[#05070B]/80 backdrop-blur-xl"
           : "bg-transparent"
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16">
-        {/* Original logo — same image your old Navbar used */}
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="Vytora"
-            width={110}
-            height={32}
-            priority
-            className="h-8 w-auto object-contain"
-          />
+
+        {/* Logo — identical to original Navbar */}
+        <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-white">
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#05070B]"
+            style={{ background: "linear-gradient(135deg, #34E0A1, #00D4B4)" }}
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+              <path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z" />
+            </svg>
+          </span>
+          Vytora
         </Link>
 
         {/* Desktop links */}
@@ -112,25 +107,21 @@ export default function Navbar() {
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white md:hidden"
         >
-          {menuOpen ? (
-            <X className="h-4 w-4" />
-          ) : (
-            <Menu className="h-4 w-4" />
-          )}
+          {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
       </nav>
 
-      {/* Mobile drawer — shows ALL pages */}
+      {/* Mobile drawer — ALL pages visible */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="border-t border-white/10 bg-[#05070B]/95 backdrop-blur-xl md:hidden"
           >
-            <ul className="flex flex-col gap-1 px-6 py-4">
+            <ul className="flex flex-col px-6 py-4 gap-1">
               {MOBILE_LINKS.map((link) => (
                 <li key={link.label}>
                   <Link
