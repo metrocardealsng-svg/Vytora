@@ -1,23 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * GET /api/leaderboard?range=week|month|alltime
- *
- * Returns top 50 users ranked by composite score:
- *   score = steps × 1 + distance_meters × 0.1 + calories × 0.5 + current_streak × 500
- *
- * - week / month: aggregates from the `activities` table filtered by started_at
- * - alltime: uses pre-aggregated totals on the `users` table for performance
- *
- * Only includes users with a public profile (profiles.is_public = true).
- */
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role so we can read all public profiles
-);
-
 export type LeaderboardEntry = {
   rank: number;
   user_id: string;
@@ -32,6 +15,11 @@ export type LeaderboardEntry = {
   score: number;
 };
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 function getRangeStart(range: string): string | null {
   const now = new Date();
   if (range === "week") {
@@ -44,7 +32,7 @@ function getRangeStart(range: string): string | null {
     d.setMonth(d.getMonth() - 1);
     return d.toISOString();
   }
-  return null; // alltime
+  return null;
 }
 
 export async function GET(req: NextRequest) {
@@ -53,25 +41,9 @@ export async function GET(req: NextRequest) {
 
   try {
     if (range === "alltime") {
-      // Use pre-aggregated totals on users — much faster for all-time
       const { data, error } = await supabase
         .from("users")
-        .select(
-          `
-          id,
-          name,
-          avatar_url,
-          current_streak,
-          total_steps,
-          total_distance_meters,
-          total_activities,
-          profiles!inner (
-            username,
-            avatar_url,
-            is_public
-          )
-        `
-        )
+        .select(`id, name, avatar_url, current_streak, total_steps, total_distance_meters, total_activities, profiles!inner(username, avatar_url, is_public)`)
         .eq("profiles.is_public", true)
         .order("total_steps", { ascending: false })
         .limit(50);
@@ -83,8 +55,7 @@ export async function GET(req: NextRequest) {
           const steps = u.total_steps ?? 0;
           const distance = u.total_distance_meters ?? 0;
           const streak = u.current_streak ?? 0;
-          const score =
-            steps * 1 + distance * 0.1 + streak * 500;
+          const score = steps * 1 + distance * 0.1 + streak * 500;
           return {
             user_id: u.id,
             name: u.name,
@@ -93,7 +64,7 @@ export async function GET(req: NextRequest) {
             current_streak: streak,
             period_steps: steps,
             period_distance_meters: distance,
-            period_calories: 0, // not stored as total on users table
+            period_calories: 0,
             period_activities: u.total_activities ?? 0,
             score,
             rank: 0,
@@ -105,33 +76,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(entries);
     }
 
-    // Week / Month — aggregate from activities table
     const { data, error } = await supabase
       .from("activities")
-      .select(
-        `
-        user_id,
-        steps,
-        calories,
-        distance_meters,
-        users!inner (
-          name,
-          avatar_url,
-          current_streak,
-          profiles!inner (
-            username,
-            avatar_url,
-            is_public
-          )
-        )
-      `
-      )
+      .select(`user_id, steps, calories, distance_meters, users!inner(name, avatar_url, current_streak, profiles!inner(username, avatar_url, is_public))`)
       .gte("started_at", rangeStart!)
       .eq("users.profiles.is_public", true);
 
     if (error) throw error;
 
-    // Group by user_id in JS
     const map = new Map<string, LeaderboardEntry>();
 
     for (const row of data ?? []) {
@@ -165,11 +117,7 @@ export async function GET(req: NextRequest) {
     const entries: LeaderboardEntry[] = Array.from(map.values())
       .map((e) => ({
         ...e,
-        score:
-          e.period_steps * 1 +
-          e.period_distance_meters * 0.1 +
-          e.period_calories * 0.5 +
-          e.current_streak * 500,
+        score: e.period_steps * 1 + e.period_distance_meters * 0.1 + e.period_calories * 0.5 + e.current_streak * 500,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 50)
@@ -178,9 +126,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(entries);
   } catch (err: any) {
     console.error("[leaderboard]", err);
-    return NextResponse.json(
-      { error: err.message ?? "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message ?? "Internal server error" }, { status: 500 });
   }
 }
