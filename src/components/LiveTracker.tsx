@@ -21,13 +21,11 @@ const CALORIE_RATE: Record<ActivityType, number> = {
   treadmill: 105, gym: 8, yoga: 4, swim: 130,
 };
 
-// Max realistic speeds in m/s per activity
 const MAX_SPEED: Record<ActivityType, number> = {
   walk: 3.5, run: 9, hike: 2.5, cycle: 15,
   treadmill: 9, gym: 0.5, yoga: 0.2, swim: 3,
 };
 
-// Milestones
 const STEP_MILESTONES = [
   { steps: 1000, msg: "1,000 steps! You're moving 🚶" },
   { steps: 2500, msg: "2,500 steps! Keep it up 💪" },
@@ -50,7 +48,16 @@ const GPS_OPTIONS: PositionOptions = {
   timeout: 10000,
 };
 
-// ─── GPS smoother (exponential moving average) ─────────────────────────────────
+// Minimum distance + points before we show a real pace
+const MIN_DISTANCE_FOR_PACE = 50; // meters
+const MIN_POINTS_FOR_PACE = 3;
+
+// Rolling pace window — use last 30 seconds of movement only
+const PACE_WINDOW_SEC = 30;
+
+type PacePoint = { distM: number; t: number }; // t = epoch ms
+
+// ─── GPS smoother ──────────────────────────────────────────────────────────────
 function smoothLatLng(
   prev: { lat: number; lng: number } | null,
   next: { lat: number; lng: number },
@@ -67,7 +74,6 @@ function smoothLatLng(
 export default function LiveTracker({ authed }: { authed: boolean }) {
   const router = useRouter();
 
-  // ─ State ─
   const [status, setStatus] = useState<Status>("idle");
   const [activityType, setActivityType] = useState<ActivityType>("walk");
   const [route, setRoute] = useState<LatLng[]>([]);
@@ -80,26 +86,31 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const [message, setMessage] = useState<string | null>(null);
   const [achievement, setAchievement] = useState<string | null>(null);
   const [isStationary, setIsStationary] = useState(false);
+  const [rollingPaceSec, setRollingPaceSec] = useState(0); // BUG2 FIX: rolling pace
 
-  // ─ Refs (never cause re-renders) ─
+  // Refs
   const watchIdRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
-  const accumulatedRef = useRef<number>(0);          // seconds accumulated before pauses
-  const lastAcceptedRef = useRef<LatLng | null>(null); // last accepted GPS point
+  const accumulatedRef = useRef<number>(0);
+  const lastAcceptedRef = useRef<LatLng | null>(null);
   const smoothedPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const stationaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const achievementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggeredStepsRef = useRef<Set<number>>(new Set());
   const triggeredDistRef = useRef<Set<number>>(new Set());
-  const statusRef = useRef<Status>("idle"); // mirror for callbacks
 
-  // keep statusRef in sync
-  useEffect(() => { statusRef.current = status; }, [status]);
+  // BUG1 FIX: statusRef updated SYNCHRONOUSLY in action functions, not via useEffect
+  const statusRef = useRef<Status>("idle");
 
-  // ─── Timer helpers ──────────────────────────────────────────────────────────
+  // BUG2 FIX: pace window buffer
+  const paceWindowRef = useRef<PacePoint[]>([]);
+  const totalDistanceRef = useRef<number>(0); // mirrors distanceMeters for use in callbacks
+  const routeLengthRef = useRef<number>(0);   // mirrors route.length for use in callbacks
+
+  // ─── Timer ──────────────────────────────────────────────────────────────────
   function startTimer() {
-    if (timerRef.current) return; // guard duplicate
+    if (timerRef.current) return;
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       setElapsed(accumulatedRef.current + (Date.now() - startTimeRef.current) / 1000);
@@ -107,10 +118,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   }
 
   function stopTimer() {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }
 
   function pauseTimer() {
@@ -125,20 +133,18 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     achievementTimerRef.current = setTimeout(() => setAchievement(null), 4000);
   }
 
-  // ─── GPS position handler ───────────────────────────────────────────────────
+  // ─── GPS handler ────────────────────────────────────────────────────────────
   const handlePosition = useCallback((pos: GeolocationPosition) => {
     setGpsReady(true);
     setGpsAccuracy(Math.round(pos.coords.accuracy));
 
-    // 1. Reject inaccurate fixes
     if (pos.coords.accuracy > 20) return;
 
-    // 2. Smooth the raw reading
     const rawLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     const smoothed = smoothLatLng(smoothedPosRef.current, rawLatLng);
     smoothedPosRef.current = smoothed;
 
-    // 3. Not yet tracking — just prime the smoother
+    // BUG1 FIX: read statusRef which is now always up-to-date synchronously
     if (statusRef.current !== "tracking") return;
 
     const now = Date.now();
@@ -147,43 +153,39 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     if (!lastAcceptedRef.current) {
       lastAcceptedRef.current = point;
       setRoute([point]);
+      routeLengthRef.current = 1;
       return;
     }
 
     const distM = haversine(lastAcceptedRef.current, point);
     const dtSec = (now - lastAcceptedRef.current.t) / 1000;
     if (dtSec <= 0) return;
+
     const speedMs = distM / dtSec;
     const maxMs = MAX_SPEED[activityType] ?? 9;
-
-    // 4. Speed gate — reject teleports
     if (speedMs > maxMs * 1.5) return;
 
-    // 5. Minimum movement gate — ignore sub-3m jitter
     if (distM < 3) {
-      // May be stationary — start stationary timer
       if (!stationaryTimerRef.current) {
-        stationaryTimerRef.current = setTimeout(() => {
-          setIsStationary(true);
-        }, 8000);
+        stationaryTimerRef.current = setTimeout(() => setIsStationary(true), 8000);
       }
       return;
     }
 
-    // 6. Movement confirmed — cancel stationary timer
     if (stationaryTimerRef.current) {
       clearTimeout(stationaryTimerRef.current);
       stationaryTimerRef.current = null;
     }
     setIsStationary(false);
 
-    // 7. Accept point — update distance, route, steps
     lastAcceptedRef.current = point;
+    totalDistanceRef.current += distM;
+    routeLengthRef.current += 1;
+
     setRoute((prev) => [...prev, point]);
 
     setDistanceMeters((prev) => {
       const next = prev + distM;
-      // distance milestones
       DISTANCE_MILESTONES.forEach(({ meters, msg }) => {
         if (next >= meters && !triggeredDistRef.current.has(meters)) {
           triggeredDistRef.current.add(meters);
@@ -193,7 +195,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
       return next;
     });
 
-    // Estimate steps from accepted distance
+    // Steps from distance
     const stride = STRIDE_METERS[activityType] || 0.762;
     if (stride > 0) {
       const newSteps = Math.round(distM / stride);
@@ -207,6 +209,28 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
         });
         return next;
       });
+    }
+
+    // BUG2 FIX: rolling pace — push to window, trim to last 30s
+    paceWindowRef.current.push({ distM, t: now });
+    const cutoff = now - PACE_WINDOW_SEC * 1000;
+    paceWindowRef.current = paceWindowRef.current.filter((p) => p.t >= cutoff);
+
+    // Only calculate pace if we have enough data
+    if (
+      totalDistanceRef.current >= MIN_DISTANCE_FOR_PACE &&
+      routeLengthRef.current >= MIN_POINTS_FOR_PACE &&
+      paceWindowRef.current.length >= 2
+    ) {
+      const windowDistM = paceWindowRef.current.reduce((s, p) => s + p.distM, 0);
+      const windowSec = (now - paceWindowRef.current[0].t) / 1000;
+      if (windowSec > 0 && windowDistM > 0) {
+        const windowMiles = metersToMiles(windowDistM);
+        const paceSec = windowSec / windowMiles;
+        // Sanity clamp: 3 min/mile (elite) to 30 min/mile (very slow)
+        const clamped = Math.max(180, Math.min(1800, paceSec));
+        setRollingPaceSec(clamped);
+      }
     }
   }, [activityType]);
 
@@ -222,14 +246,12 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
 
   // ─── Watch / unwatch ────────────────────────────────────────────────────────
   function startWatch() {
-    if (watchIdRef.current !== null) return; // already watching
+    if (watchIdRef.current !== null) return true;
     if (!navigator.geolocation) {
       setError("Geolocation is not supported on this browser.");
       return false;
     }
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      handlePosition, handleError, GPS_OPTIONS
-    );
+    watchIdRef.current = navigator.geolocation.watchPosition(handlePosition, handleError, GPS_OPTIONS);
     return true;
   }
 
@@ -240,7 +262,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     }
   }
 
-  // Cleanup on unmount
   useEffect(() => () => {
     stopWatch();
     stopTimer();
@@ -248,34 +269,42 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     if (achievementTimerRef.current) clearTimeout(achievementTimerRef.current);
   }, []);
 
-  // ─── Actions ────────────────────────────────────────────────────────────────
+  // ─── Actions — statusRef.current updated SYNCHRONOUSLY before setState ───────
   function start() {
     setError(null);
     setMessage(null);
     const ok = startWatch();
     if (!ok) return;
     accumulatedRef.current = 0;
+    statusRef.current = "tracking"; // BUG1 FIX: sync update first
     startTimer();
     triggeredStepsRef.current.clear();
     triggeredDistRef.current.clear();
+    paceWindowRef.current = [];     // BUG2 FIX: clear pace window on fresh start
+    totalDistanceRef.current = 0;
+    routeLengthRef.current = 0;
+    setRollingPaceSec(0);
     setStatus("tracking");
     showAchievement("GPS locked. Let's go! 🚀");
   }
 
   function pause() {
+    statusRef.current = "paused"; // BUG1 FIX: sync update first
     pauseTimer();
-    lastAcceptedRef.current = null; // reset so next point re-primes
+    lastAcceptedRef.current = null;
     setStatus("paused");
     setIsStationary(false);
   }
 
   function resume() {
     setError(null);
+    statusRef.current = "tracking"; // BUG1 FIX: sync update first
     startTimer();
     setStatus("tracking");
   }
 
   function reset() {
+    statusRef.current = "idle"; // BUG1 FIX: sync update first
     stopWatch();
     stopTimer();
     if (stationaryTimerRef.current) { clearTimeout(stationaryTimerRef.current); stationaryTimerRef.current = null; }
@@ -288,17 +317,23 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     setAchievement(null);
     setMessage(null);
     setError(null);
+    setRollingPaceSec(0);
     lastAcceptedRef.current = null;
     smoothedPosRef.current = null;
     accumulatedRef.current = 0;
+    totalDistanceRef.current = 0;
+    routeLengthRef.current = 0;
+    paceWindowRef.current = [];
     triggeredStepsRef.current.clear();
     triggeredDistRef.current.clear();
   }
 
   async function finish() {
+    statusRef.current = "saving"; // BUG1 FIX: sync update first — stops GPS callbacks immediately
     stopWatch();
     stopTimer();
     if (!authed) {
+      statusRef.current = "done";
       setStatus("done");
       setMessage("Sign up free to save this activity and track your progress.");
       return;
@@ -328,11 +363,18 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setStatus("done"); setError(data.error || "Could not save."); return; }
+      if (!res.ok) {
+        statusRef.current = "done";
+        setStatus("done");
+        setError(data.error || "Could not save.");
+        return;
+      }
+      statusRef.current = "done";
       setStatus("done");
       setMessage("Activity saved! Redirecting…");
       setTimeout(() => { router.push("/dashboard"); router.refresh(); }, 1200);
     } catch {
+      statusRef.current = "done";
       setStatus("done");
       setError("Network error while saving.");
     }
@@ -341,17 +383,19 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   // ─── Derived values ─────────────────────────────────────────────────────────
   const active = status === "tracking";
   const miles = metersToMiles(distanceMeters);
-  const paceSecPerMile = miles > 0.01 ? elapsed / miles : 0;
-  const speedMph = elapsed > 0 ? (miles / (elapsed / 3600)) : 0;
   const isTimeBasedCalorie = activityType === "gym" || activityType === "yoga";
   const calories = isTimeBasedCalorie
     ? Math.round((elapsed / 60) * (CALORIE_RATE[activityType] || 95))
     : Math.round(miles * (CALORIE_RATE[activityType] || 95));
+  const speedMph = elapsed > 0 ? (miles / (elapsed / 3600)) : 0;
+
+  // BUG2 FIX: show rolling pace; show "--" until we have enough data
+  const showPace = distanceMeters >= MIN_DISTANCE_FOR_PACE && route.length >= MIN_POINTS_FOR_PACE && rollingPaceSec > 0;
+  const paceDisplay = showPace ? formatPace(rollingPaceSec) : "--:--";
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="w-full relative overflow-hidden">
-      {/* Achievement toast */}
       {achievement && (
         <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 w-[90vw] max-w-xs px-4"
           style={{ animation: "slideDown 0.4s ease-out" }}>
@@ -380,7 +424,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
               ))}
             </div>
 
-            {/* GPS indicator */}
             <div className="flex items-center gap-1.5 text-xs flex-shrink-0">
               <span className={`relative flex h-2.5 w-2.5 ${active ? "" : "opacity-40"}`}>
                 {active && <span className="absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"
@@ -395,14 +438,12 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
             </div>
           </div>
 
-          {/* Stationary warning */}
           {isStationary && active && (
             <div className="mb-4 rounded-xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-2.5 text-center text-xs text-yellow-400">
               Auto-paused — move to resume tracking
             </div>
           )}
 
-          {/* Primary metric */}
           <div className="text-center mb-2">
             <div className="text-6xl font-black leading-none tracking-tighter text-white sm:text-7xl">
               {formatMiles(distanceMeters)}
@@ -412,7 +453,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
             </div>
           </div>
 
-          {/* Step progress bar */}
           {(active || status === "paused") && (
             <div className="mb-4 px-1">
               <div className="flex justify-between text-xs text-slate-400 mb-1.5">
@@ -426,17 +466,16 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
             </div>
           )}
 
-          {/* Map */}
           <div className="mb-4 overflow-hidden rounded-2xl"
             style={{ height: "clamp(140px, 35vw, 200px)", width: "100%" }}>
             <RouteMap route={route} active={active} />
           </div>
 
-          {/* Metrics grid */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric label="Steps" value={steps.toLocaleString()} highlight={steps >= 10000} />
             <Metric label="Time" value={formatDuration(elapsed)} />
-            <Metric label="Pace /mi" value={formatPace(paceSecPerMile)} />
+            {/* BUG2 FIX: show rolling pace with "--:--" until data is ready */}
+            <Metric label="Pace /mi" value={paceDisplay} />
             <Metric label="Calories" value={`${calories}`} />
           </div>
 
@@ -449,7 +488,6 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
             </div>
           </div>
 
-          {/* Controls */}
           <div className="mt-6">
             {status === "idle" && (
               <button onClick={start}
