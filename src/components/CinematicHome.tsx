@@ -17,11 +17,10 @@ const Testimonials = dynamic(() => import("@/components/home/Testimonials"), {
   loading: () => null,
 });
 
-// Uncomment once Leaderboard.tsx is pushed to src/components/home/
-// const Leaderboard = dynamic(() => import("@/components/home/Leaderboard"), {
-//   ssr: false,
-//   loading: () => <div className="h-96 w-full" />,
-// });
+const Leaderboard = dynamic(() => import("@/components/home/Leaderboard"), {
+  ssr: false,
+  loading: () => <div className="h-96 w-full" />,
+});
 
 type CinematicHomeProps = {
   userId?: string | null;
@@ -40,7 +39,9 @@ export default function CinematicHome({ userId }: CinematicHomeProps) {
 
       <Testimonials />
 
-      {/* Leaderboard goes here once file is pushed */}
+      <section id="tracker">
+        <Leaderboard currentUserId={userId} />
+      </section>
 
       <section id="pricing">
         <PricingPreview />
