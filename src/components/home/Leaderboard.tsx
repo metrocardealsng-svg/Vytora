@@ -5,7 +5,21 @@ import { createClient } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Flame, Trophy, Crown } from "lucide-react";
-import type { LeaderboardEntry } from "@/app/api/leaderboard/route";
+
+export type LeaderboardEntry = {
+  rank: number;
+  user_id: string;
+  name: string;
+  username: string;
+  avatar_url: string | null;
+  current_streak: number;
+  period_steps: number;
+  period_distance_meters: number;
+  period_calories: number;
+  period_activities: number;
+  score: number;
+};
+
 
 /**
  * Leaderboard
