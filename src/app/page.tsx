@@ -4,7 +4,8 @@ import Footer from "@/components/Footer";
 import LiveTracker from "@/components/LiveTracker";
 import StarRating from "@/components/StarRating";
 import { getSessionUserId } from "@/lib/auth";
-
+import AIMealPlanner from "@/components/home/AIMealPlanner";
+import Testimonials from "@/components/home/Testimonials";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -46,7 +47,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="animate-fade-up lg:pl-6" style={{ animationDelay: "0.1s" }}>
+          <div className="hidden lg:block animate-fade-up lg:pl-6" style={{ animationDelay: "0.1s" }}>
             <LiveTracker authed={Boolean(userId)} />
           </div>
         </div>
@@ -68,7 +69,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
-
+     <AIMealPlanner />     
       {/* FEATURES */}
       <section className="mx-auto max-w-7xl px-5 py-20">
         <div className="mx-auto max-w-2xl text-center">
@@ -114,10 +115,10 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
+    <Testimonials />
       {/* COMPARE TEASER */}
       <section className="mx-auto max-w-7xl px-5 py-20">
-        <div className="glass overflow-hidden rounded-3xl">
+        <div className="glass mx-auto max-w-sm overflow-hidden rounded-3xl p-1 sm:max-w-none">
           <div className="grid items-center gap-8 p-8 md:grid-cols-2 md:p-12">
             <div>
               <h2 className="text-3xl font-black tracking-tight text-white">
