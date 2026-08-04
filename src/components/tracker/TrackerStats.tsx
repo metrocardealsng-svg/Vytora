@@ -3,14 +3,22 @@
 import { memo } from "react";
 import { formatDuration, formatPace } from "@/lib/format";
 
-// ─── Metric tile ──────────────────────────────────────────────────────────────
+interface TrackerStatsProps {
+  steps: number;
+  calories: number;
+  elapsed: number;
+  pace: number;
+  speed: number;
+  routeLength: number;
+}
+
 interface MetricProps {
   label: string;
   value: string;
   highlight?: boolean;
 }
 
-const Metric = memo(function Metric({ label, value, highlight = false }: MetricProps) {
+const Metric = memo(function Metric({ label, value, highlight }: MetricProps) {
   return (
     <div
       className={`rounded-xl p-3 text-center transition-all ${
@@ -31,39 +39,23 @@ const Metric = memo(function Metric({ label, value, highlight = false }: MetricP
   );
 });
 
-// ─── TrackerStats ─────────────────────────────────────────────────────────────
-interface TrackerStatsProps {
-  steps: number;
-  elapsed: number;     // seconds
-  pace: number;        // seconds per mile
-  calories: number;
-  speed: number;       // mph
-  gpsPoints: number;   // route.length
-}
-
 export const TrackerStats = memo(function TrackerStats({
   steps,
+  calories,
   elapsed,
   pace,
-  calories,
   speed,
-  gpsPoints,
+  routeLength,
 }: TrackerStatsProps) {
   return (
     <>
-      {/* ── Main metrics grid ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metric
-          label="Steps"
-          value={steps.toLocaleString()}
-          highlight={steps >= 10000}
-        />
-        <Metric label="Time"     value={formatDuration(elapsed)} />
+        <Metric label="Steps" value={steps.toLocaleString()} highlight={steps >= 10000} />
+        <Metric label="Time" value={formatDuration(elapsed)} />
         <Metric label="Pace /mi" value={formatPace(pace)} />
-        <Metric label="Calories" value={String(calories)} />
+        <Metric label="Calories" value={`${calories}`} />
       </div>
 
-      {/* ── Secondary info row ────────────────────────────────────────────── */}
       <div className="mt-3 grid grid-cols-2 gap-3 text-center text-xs text-slate-400">
         <div className="rounded-lg bg-white/5 py-2">
           Speed{" "}
@@ -71,7 +63,7 @@ export const TrackerStats = memo(function TrackerStats({
         </div>
         <div className="rounded-lg bg-white/5 py-2">
           GPS pts{" "}
-          <span className="font-bold text-white">{gpsPoints}</span>
+          <span className="font-bold text-white">{routeLength}</span>
         </div>
       </div>
     </>
