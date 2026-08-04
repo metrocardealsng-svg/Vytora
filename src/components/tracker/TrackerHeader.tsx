@@ -6,29 +6,29 @@ import type { ActivityType, Status } from "./types";
 
 interface TrackerHeaderProps {
   activityType: ActivityType;
-  setActivityType: (type: ActivityType) => void;
   status: Status;
-  gpsAccuracy: number | null;
   gpsReady: boolean;
+  gpsAccuracy: number | null;
   achievement: string | null;
   isStationary: boolean;
+  onActivityChange: (t: ActivityType) => void;
 }
 
 export const TrackerHeader = memo(function TrackerHeader({
   activityType,
-  setActivityType,
   status,
-  gpsAccuracy,
   gpsReady,
+  gpsAccuracy,
   achievement,
   isStationary,
+  onActivityChange,
 }: TrackerHeaderProps) {
-  const active   = status === "tracking";
-  const disabled = active || status === "paused";
+  const active = status === "tracking";
+  const locked = active || status === "paused";
 
   return (
     <>
-      {/* ── Achievement toast ─────────────────────────────────────────────── */}
+      {/* Achievement toast */}
       {achievement && (
         <div
           className="fixed top-20 left-1/2 z-50 -translate-x-1/2 w-[90vw] max-w-xs px-4"
@@ -40,9 +40,8 @@ export const TrackerHeader = memo(function TrackerHeader({
         </div>
       )}
 
-      {/* ── Activity selector + GPS indicator ────────────────────────────── */}
+      {/* Activity selector + GPS indicator */}
       <div className="mb-5 flex items-center gap-3">
-        {/* Scrollable pill selector */}
         <div
           className="flex overflow-x-auto rounded-xl bg-white/5 p-1.5 gap-1 scrollbar-none flex-1"
           style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
@@ -50,8 +49,8 @@ export const TrackerHeader = memo(function TrackerHeader({
           {ACTIVITIES.map((t) => (
             <button
               key={t}
-              disabled={disabled}
-              onClick={() => setActivityType(t)}
+              disabled={locked}
+              onClick={() => onActivityChange(t)}
               className={`flex-shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold capitalize transition-colors disabled:opacity-40 ${
                 activityType === t
                   ? "bg-mint text-ink"
@@ -90,23 +89,12 @@ export const TrackerHeader = memo(function TrackerHeader({
         </div>
       </div>
 
-      {/* ── Stationary warning ────────────────────────────────────────────── */}
+      {/* Stationary warning */}
       {isStationary && active && (
         <div className="mb-4 rounded-xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-2.5 text-center text-xs text-yellow-400">
           Auto-paused — move to resume tracking
         </div>
       )}
-
-      {/* ── Keyframe animations (used by toast and GPS dot above) ─────────── */}
-      <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0);     }
-        }
-        @keyframes ping {
-          75%, 100% { transform: scale(2); opacity: 0; }
-        }
-      `}</style>
     </>
   );
 });
