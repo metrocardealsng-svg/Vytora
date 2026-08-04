@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import VytoChat from "@/components/VytoChat";
@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   },
   description: "Vytora is the smart step & GPS activity tracker for a healthier you.",
   manifest: "/manifest.json",
-  themeColor: "#34e0a1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -40,12 +39,26 @@ export const metadata: Metadata = {
     url: appUrl,
     siteName: "Vytora",
     type: "website",
+    images: [
+      {
+        url: `${appUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Vytora - Live Better Every Day",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Vytora — Live Better. Every Day.",
     description: "The smart step & GPS activity tracker for a better daily life.",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#34e0a1",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
