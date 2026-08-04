@@ -18,7 +18,8 @@ import {
   STEP_MILESTONES,
   STRIDE_METERS,
 } from "./constants";
-import type { ActivityType, LatLng, Status, TrackerHook } from "./types";
+import type { LatLng } from "@/db/schema";
+import type { ActivityType, Status, TrackerHook } from "./types";
 
 // ── GPS smoother (exponential moving average) ─────────────────────────────────
 function smoothLatLng(
