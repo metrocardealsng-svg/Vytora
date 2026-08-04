@@ -38,7 +38,7 @@ export interface TrackerActions {
   start: () => void;
   pause: () => void;
   resume: () => void;
-  finish: () => void;
+  finish: () => Promise<void>;
   reset: () => void;
 }
 
