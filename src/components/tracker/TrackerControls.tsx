@@ -5,54 +5,48 @@ import type { Status } from "./types";
 
 interface TrackerControlsProps {
   status: Status;
-  authed: boolean;
   error: string | null;
   message: string | null;
-  start: () => void;
-  pause: () => void;
-  resume: () => void;
-  finish: () => Promise<void>;
-  reset: () => void;
+  authed: boolean;
+  onStart: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => Promise<void>;
+  onReset: () => void;
 }
 
 export const TrackerControls = memo(function TrackerControls({
   status,
-  authed,
   error,
   message,
-  start,
-  pause,
-  resume,
-  finish,
-  reset,
+  authed,
+  onStart,
+  onPause,
+  onResume,
+  onFinish,
+  onReset,
 }: TrackerControlsProps) {
-  // Wrap async finish so React onClick receives a sync handler (no unhandled-promise lint)
-  const handleFinish = () => { void finish(); };
-
   return (
     <div className="mt-6">
-
-      {/* ── Idle: Start button ────────────────────────────────────────────── */}
       {status === "idle" && (
         <button
-          onClick={start}
+          onClick={onStart}
           className="btn-glow w-full rounded-xl bg-gradient-to-r from-mint to-teal py-4 text-lg font-black text-ink"
         >
           ▶ Start Tracking
         </button>
       )}
 
-      {/* ── Tracking: Pause + Finish ──────────────────────────────────────── */}
       {status === "tracking" && (
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={pause}
+            onClick={onPause}
             className="rounded-xl border border-white/15 bg-white/5 py-4 text-base font-bold text-white hover:bg-white/10"
           >
             ❚❚ Pause
           </button>
           <button
-            onClick={handleFinish}
+            onClick={onFinish}
             className="rounded-xl bg-lime py-4 text-base font-black text-ink hover:opacity-90"
           >
             ■ Finish
@@ -60,23 +54,22 @@ export const TrackerControls = memo(function TrackerControls({
         </div>
       )}
 
-      {/* ── Paused: Resume + Finish + Reset ──────────────────────────────── */}
       {status === "paused" && (
         <div className="grid grid-cols-3 gap-3">
           <button
-            onClick={resume}
+            onClick={onResume}
             className="rounded-xl bg-gradient-to-r from-mint to-teal py-4 text-base font-black text-ink"
           >
             ▶ Resume
           </button>
           <button
-            onClick={handleFinish}
+            onClick={onFinish}
             className="rounded-xl bg-lime py-4 text-base font-black text-ink hover:opacity-90"
           >
             ■ Finish
           </button>
           <button
-            onClick={reset}
+            onClick={onReset}
             className="rounded-xl border border-white/15 bg-white/5 py-4 text-base font-bold text-white"
           >
             Reset
@@ -84,7 +77,6 @@ export const TrackerControls = memo(function TrackerControls({
         </div>
       )}
 
-      {/* ── Saving: disabled spinner button ──────────────────────────────── */}
       {status === "saving" && (
         <button
           disabled
@@ -94,24 +86,21 @@ export const TrackerControls = memo(function TrackerControls({
         </button>
       )}
 
-      {/* ── Done: Track Another ───────────────────────────────────────────── */}
       {status === "done" && (
         <button
-          onClick={reset}
+          onClick={onReset}
           className="btn-glow w-full rounded-xl bg-gradient-to-r from-mint to-teal py-4 text-lg font-black text-ink"
         >
           Track Another
         </button>
       )}
 
-      {/* ── Error message ─────────────────────────────────────────────────── */}
       {error && (
         <p className="mt-4 rounded-lg bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
           {error}
         </p>
       )}
 
-      {/* ── Info / success message ────────────────────────────────────────── */}
       {message && (
         <p className="mt-4 rounded-lg bg-mint/10 px-4 py-3 text-center text-sm text-mint">
           {message}
@@ -125,7 +114,6 @@ export const TrackerControls = memo(function TrackerControls({
           )}
         </p>
       )}
-
     </div>
   );
 });
