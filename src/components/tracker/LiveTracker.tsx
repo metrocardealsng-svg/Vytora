@@ -1,16 +1,10 @@
 "use client";
 
 import { useLiveTracker } from "./useLiveTracker";
-import { TrackerHeader }  from "./TrackerHeader";
-import { TrackerMap }     from "./TrackerMap";
-import { TrackerStats }   from "./TrackerStats";
+import { TrackerHeader } from "./TrackerHeader";
+import { TrackerMap } from "./TrackerMap";
+import { TrackerStats } from "./TrackerStats";
 import { TrackerControls } from "./TrackerControls";
-
-// ─── LiveTracker ──────────────────────────────────────────────────────────────
-// Pure layout orchestrator.
-// All business logic lives in useLiveTracker.
-// All UI sections live in their respective sub-components.
-// This file intentionally contains no state, effects, refs, or callbacks.
 
 interface LiveTrackerProps {
   authed: boolean;
@@ -23,51 +17,55 @@ export default function LiveTracker({ authed }: LiveTrackerProps) {
     <div className="w-full relative overflow-hidden">
       <div className="glass overflow-hidden rounded-3xl p-1">
         <div className="rounded-[22px] bg-gradient-to-b from-ink-soft to-[#0a0e14] p-4 sm:p-6">
-
-          {/* Activity selector · GPS indicator · Achievement toast · Stationary warning */}
           <TrackerHeader
             activityType={tracker.activityType}
-            setActivityType={tracker.setActivityType}
             status={tracker.status}
-            gpsAccuracy={tracker.gpsAccuracy}
             gpsReady={tracker.gpsReady}
+            gpsAccuracy={tracker.gpsAccuracy}
             achievement={tracker.achievement}
             isStationary={tracker.isStationary}
+            onActivityChange={tracker.setActivityType}
           />
 
-          {/* Distance display · Step progress bar · Route map */}
           <TrackerMap
+            route={tracker.route}
             distanceMeters={tracker.distanceMeters}
             steps={tracker.steps}
-            route={tracker.route}
             status={tracker.status}
           />
 
-          {/* Steps · Time · Pace · Calories · Speed · GPS points */}
           <TrackerStats
             steps={tracker.steps}
+            calories={tracker.calories}
             elapsed={tracker.elapsed}
             pace={tracker.pace}
-            calories={tracker.calories}
             speed={tracker.speed}
-            gpsPoints={tracker.route.length}
+            routeLength={tracker.route.length}
           />
 
-          {/* Start · Pause · Resume · Finish · Reset · Error · Message */}
           <TrackerControls
             status={tracker.status}
-            authed={authed}
             error={tracker.error}
             message={tracker.message}
-            start={tracker.start}
-            pause={tracker.pause}
-            resume={tracker.resume}
-            finish={tracker.finish}
-            reset={tracker.reset}
+            authed={authed}
+            onStart={tracker.start}
+            onPause={tracker.pause}
+            onResume={tracker.resume}
+            onFinish={tracker.finish}
+            onReset={tracker.reset}
           />
-
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes ping {
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
