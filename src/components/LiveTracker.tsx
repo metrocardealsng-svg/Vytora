@@ -53,7 +53,7 @@ const MIN_DISTANCE_FOR_PACE = 50; // meters
 const MIN_POINTS_FOR_PACE = 3;
 
 // Rolling pace window — use last 30 seconds of movement only
-const PACE_WINDOW_SEC = 30;
+const PACE_WINDOW_SEC = 10;
 
 type PacePoint = { distM: number; t: number }; // t = epoch ms
 
@@ -107,6 +107,9 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const paceWindowRef = useRef<PacePoint[]>([]);
   const totalDistanceRef = useRef<number>(0); // mirrors distanceMeters for use in callbacks
   const routeLengthRef = useRef<number>(0);   // mirrors route.length for use in callbacks
+
+  // Fractional step accumulator to avoid rounding bias
+  const stepAccumRef = useRef<number>(0);
 
   // ─── Timer ──────────────────────────────────────────────────────────────────
   function startTimer() {
@@ -195,23 +198,27 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
       return next;
     });
 
-    // Steps from distance
+    // Steps from distance — use fractional accumulation to avoid rounding bias
     const stride = STRIDE_METERS[activityType] || 0.762;
     if (stride > 0) {
-      const newSteps = Math.round(distM / stride);
-      setSteps((prev) => {
-        const next = prev + newSteps;
-        STEP_MILESTONES.forEach(({ steps: threshold, msg }) => {
-          if (next >= threshold && !triggeredStepsRef.current.has(threshold)) {
-            triggeredStepsRef.current.add(threshold);
-            showAchievement(msg);
-          }
+      stepAccumRef.current += distM / stride;
+      const wholeSteps = Math.floor(stepAccumRef.current);
+      if (wholeSteps > 0) {
+        stepAccumRef.current -= wholeSteps;
+        setSteps((prev) => {
+          const next = prev + wholeSteps;
+          STEP_MILESTONES.forEach(({ steps: threshold, msg }) => {
+            if (next >= threshold && !triggeredStepsRef.current.has(threshold)) {
+              triggeredStepsRef.current.add(threshold);
+              showAchievement(msg);
+            }
+          });
+          return next;
         });
-        return next;
-      });
+      }
     }
 
-    // BUG2 FIX: rolling pace — push to window, trim to last 30s
+    // BUG2 FIX: rolling pace — push to window, trim to last 10s
     paceWindowRef.current.push({ distM, t: now });
     const cutoff = now - PACE_WINDOW_SEC * 1000;
     paceWindowRef.current = paceWindowRef.current.filter((p) => p.t >= cutoff);
@@ -224,12 +231,11 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     ) {
       const windowDistM = paceWindowRef.current.reduce((s, p) => s + p.distM, 0);
       const windowSec = (now - paceWindowRef.current[0].t) / 1000;
-      if (windowSec > 0 && windowDistM > 0) {
+      // Require at least 1m of movement to filter GPS noise
+      if (windowSec > 0 && windowDistM >= 1) {
         const windowMiles = metersToMiles(windowDistM);
         const paceSec = windowSec / windowMiles;
-        // Sanity clamp: 3 min/mile (elite) to 30 min/mile (very slow)
-        const clamped = Math.max(180, Math.min(1800, paceSec));
-        setRollingPaceSec(clamped);
+        setRollingPaceSec(paceSec);
       }
     }
   }, [activityType]);
@@ -281,6 +287,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     triggeredStepsRef.current.clear();
     triggeredDistRef.current.clear();
     paceWindowRef.current = [];     // BUG2 FIX: clear pace window on fresh start
+    stepAccumRef.current = 0;
     totalDistanceRef.current = 0;
     routeLengthRef.current = 0;
     setRollingPaceSec(0);
@@ -324,6 +331,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     totalDistanceRef.current = 0;
     routeLengthRef.current = 0;
     paceWindowRef.current = [];
+    stepAccumRef.current = 0;
     triggeredStepsRef.current.clear();
     triggeredDistRef.current.clear();
   }
