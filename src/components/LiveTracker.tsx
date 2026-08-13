@@ -218,7 +218,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
       }
     }
 
-    // BUG2 FIX: rolling pace — push to window, trim to last 30s
+    // BUG2 FIX: rolling pace — push to window, trim to last 10s
     paceWindowRef.current.push({ distM, t: now });
     const cutoff = now - PACE_WINDOW_SEC * 1000;
     paceWindowRef.current = paceWindowRef.current.filter((p) => p.t >= cutoff);
@@ -231,7 +231,8 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     ) {
       const windowDistM = paceWindowRef.current.reduce((s, p) => s + p.distM, 0);
       const windowSec = (now - paceWindowRef.current[0].t) / 1000;
-      if (windowSec > 0 && windowDistM > 0) {
+      // Require at least 1m of movement to filter GPS noise
+      if (windowSec > 0 && windowDistM >= 1) {
         const windowMiles = metersToMiles(windowDistM);
         const paceSec = windowSec / windowMiles;
         setRollingPaceSec(paceSec);
