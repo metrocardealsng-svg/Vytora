@@ -15,11 +15,12 @@ export async function register() {
           email TEXT NOT NULL UNIQUE,
           password_hash TEXT NOT NULL,
           name TEXT NOT NULL DEFAULT '',
-          plan TEXT NOT NULL DEFAULT 'free',
-          stripe_customer_id TEXT,
-          stripe_subscription_id TEXT,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
+
+        ALTER TABLE users DROP COLUMN IF EXISTS plan;
+        ALTER TABLE users DROP COLUMN IF EXISTS stripe_customer_id;
+        ALTER TABLE users DROP COLUMN IF EXISTS stripe_subscription_id;
 
         CREATE TABLE IF NOT EXISTS activities (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

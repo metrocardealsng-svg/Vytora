@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       .values({ email: normalized, passwordHash, name: (name || "").trim() })
       .returning();
     await setSessionCookie(user.id);
-    return Response.json({ user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
+    return Response.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch {
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }

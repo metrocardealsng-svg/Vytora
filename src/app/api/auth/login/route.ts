@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Invalid email or password." }, { status: 401 });
     }
     await setSessionCookie(user.id);
-    return Response.json({ user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
+    return Response.json({ user: { id: user.id, email: user.email, name: user.name } });
   } catch {
     return Response.json({ error: "Something went wrong." }, { status: 500 });
   }
