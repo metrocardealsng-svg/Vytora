@@ -7,30 +7,50 @@ export default function RouteMap({
   route,
   active = false,
   height = 220,
+  accuracyMeters = null,
 }: {
   route: LatLng[];
   active?: boolean;
   height?: number;
+  accuracyMeters?: number | null;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const polylineRef = useRef<unknown>(null);
   const markerRef = useRef<unknown>(null);
+  const accuracyCircleRef = useRef<unknown>(null);
 
-  // Live-position marker (accurate current location, shown even before the
-  // route has enough points to draw a polyline)
+  // Live-position marker + accuracy ring (Nike/Strava-style: a translucent
+  // circle around the dot sized to the device's actual GPS accuracy, so
+  // precision is visible, not just claimed) — shown even before the route
+  // has enough points to draw a polyline.
   function ensureMarker(L: any, map: any, pos: [number, number]) {
     if (markerRef.current) {
       (markerRef.current as any).setLatLng(pos);
-      return;
+    } else {
+      const pulseIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:16px;height:16px;background:#34e0a1;border-radius:50%;border:2px solid #06080c;box-shadow:0 0 0 4px rgba(52,224,161,0.3)"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      markerRef.current = L.marker(pos, { icon: pulseIcon, zIndexOffset: 1000 }).addTo(map);
     }
-    const pulseIcon = L.divIcon({
-      className: "",
-      html: `<div style="width:16px;height:16px;background:#34e0a1;border-radius:50%;border:2px solid #06080c;box-shadow:0 0 0 4px rgba(52,224,161,0.3)"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    });
-    markerRef.current = L.marker(pos, { icon: pulseIcon }).addTo(map);
+
+    const radius = accuracyMeters ?? 20;
+    if (accuracyCircleRef.current) {
+      (accuracyCircleRef.current as any).setLatLng(pos);
+      (accuracyCircleRef.current as any).setRadius(radius);
+    } else {
+      accuracyCircleRef.current = L.circle(pos, {
+        radius,
+        color: "#34e0a1",
+        weight: 1,
+        opacity: 0.35,
+        fillColor: "#34e0a1",
+        fillOpacity: 0.12,
+      }).addTo(map);
+    }
   }
 
   useEffect(() => {
@@ -140,6 +160,14 @@ export default function RouteMap({
     ensureMarker(L, map, last);
     map.setView(last, map.getZoom());
   }, [route]);
+
+  // A fresh, more (or less) accurate GPS fix can arrive without the route
+  // gaining a point (e.g. rejected by the movement gate) — keep the ring
+  // current regardless.
+  useEffect(() => {
+    if (!accuracyCircleRef.current || accuracyMeters == null) return;
+    (accuracyCircleRef.current as any).setRadius(accuracyMeters);
+  }, [accuracyMeters]);
 
   return (
     <div

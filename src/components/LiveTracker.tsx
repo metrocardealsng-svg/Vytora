@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDuration, formatMiles, formatPace, haversine, metersToMiles } from "@/lib/format";
+import { GpsKalmanFilter } from "@/lib/gpsKalman";
 import type { LatLng } from "@/db/schema";
 import RouteMap from "./RouteMap";
 
@@ -57,18 +58,13 @@ const PACE_WINDOW_SEC = 30;
 
 type PacePoint = { distM: number; t: number }; // t = epoch ms
 
-// ─── GPS smoother ──────────────────────────────────────────────────────────────
-function smoothLatLng(
-  prev: { lat: number; lng: number } | null,
-  next: { lat: number; lng: number },
-  alpha = 0.6
-): { lat: number; lng: number } {
-  if (!prev) return next;
-  return {
-    lat: alpha * next.lat + (1 - alpha) * prev.lat,
-    lng: alpha * next.lng + (1 - alpha) * prev.lng,
-  };
-}
+// GPS fixes worse than this are almost certainly indoors/no-signal noise
+// and get dropped outright. Anything better than this still gets fed to
+// the Kalman filter below, which weights each fix by its own accuracy
+// instead of a single hard cutoff — this is what keeps the track alive
+// (and still precise) under tree cover or between tall buildings, the
+// exact conditions where a hard ±20m cutoff used to create dead gaps.
+const MAX_ACCEPTABLE_ACCURACY = 50;
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function LiveTracker({ authed }: { authed: boolean }) {
@@ -94,7 +90,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
   const startTimeRef = useRef<number>(0);
   const accumulatedRef = useRef<number>(0);
   const lastAcceptedRef = useRef<LatLng | null>(null);
-  const smoothedPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const kalmanRef = useRef<GpsKalmanFilter>(new GpsKalmanFilter());
   const stationaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const achievementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggeredStepsRef = useRef<Set<number>>(new Set());
@@ -138,16 +134,19 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     setGpsReady(true);
     setGpsAccuracy(Math.round(pos.coords.accuracy));
 
-    if (pos.coords.accuracy > 20) return;
+    if (pos.coords.accuracy > MAX_ACCEPTABLE_ACCURACY) return;
 
-    const rawLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    const smoothed = smoothLatLng(smoothedPosRef.current, rawLatLng);
-    smoothedPosRef.current = smoothed;
+    const now = Date.now();
+    const smoothed = kalmanRef.current.update(
+      pos.coords.latitude,
+      pos.coords.longitude,
+      pos.coords.accuracy,
+      now
+    );
 
     // BUG1 FIX: read statusRef which is now always up-to-date synchronously
     if (statusRef.current !== "tracking") return;
 
-    const now = Date.now();
     const point: LatLng = { lat: smoothed.lat, lng: smoothed.lng, t: now };
 
     if (!lastAcceptedRef.current) {
@@ -276,6 +275,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     const ok = startWatch();
     if (!ok) return;
     accumulatedRef.current = 0;
+    kalmanRef.current.reset();
     statusRef.current = "tracking"; // BUG1 FIX: sync update first
     startTimer();
     triggeredStepsRef.current.clear();
@@ -319,7 +319,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
     setError(null);
     setRollingPaceSec(0);
     lastAcceptedRef.current = null;
-    smoothedPosRef.current = null;
+    kalmanRef.current.reset();
     accumulatedRef.current = 0;
     totalDistanceRef.current = 0;
     routeLengthRef.current = 0;
@@ -468,7 +468,7 @@ export default function LiveTracker({ authed }: { authed: boolean }) {
 
           <div className="mb-4 overflow-hidden rounded-2xl"
             style={{ height: "clamp(140px, 35vw, 200px)", width: "100%" }}>
-            <RouteMap route={route} active={active} />
+            <RouteMap route={route} active={active} accuracyMeters={gpsAccuracy} />
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

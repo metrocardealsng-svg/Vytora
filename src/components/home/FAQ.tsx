@@ -38,13 +38,13 @@ const FAQS: FaqItem[] = [
     id: "faq-3",
     question: "What's included for free?",
     answer:
-      "Everything. Automatic step tracking, live GPS route maps, unlimited activity history, weekly challenges, nutrition and sleep tracking, and every feature we ship — no paid tiers, no paywalls.",
+      "Everything, for your first 6 months. Automatic step tracking, live GPS route maps, unlimited activity history, weekly challenges, nutrition and sleep tracking, and every feature we ship — no paid tiers, no paywalls during the free period.",
   },
   {
     id: "faq-4",
-    question: "Will Vytora ever charge for features?",
+    question: "Will Vytora charge for features later?",
     answer:
-      "No. Vytora is free for every user, permanently — there's no upgrade to buy and nothing to cancel.",
+      "Not during your first 6 months — everything is unlocked. After that, pricing will be announced, and early users get special lifetime benefits.",
   },
   {
     id: "faq-5",

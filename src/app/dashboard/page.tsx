@@ -58,7 +58,7 @@ export default async function DashboardPage() {
               <h1 className="text-3xl font-black tracking-tight text-white">
                 Hi{user.name ? `, ${user.name.split(" ")[0]}` : ""} 👋
               </h1>
-              <p className="mt-1 text-slate-400">Every feature, unlocked. No plans, no limits.</p>
+              <p className="mt-1 text-slate-400">Every feature, unlocked free for your first 6 months.</p>
             </div>
             <Link
               href="/tracker"
