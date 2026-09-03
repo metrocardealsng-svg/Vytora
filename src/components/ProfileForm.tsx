@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 type Profile = {
   name: string;
   email: string;
-  plan: string;
   bio: string;
   weightKg: string;
   heightCm: string;
@@ -23,12 +22,6 @@ const GOALS = [
   { value: "health", label: "Better health" },
 ];
 
-const PLAN_COLORS: Record<string, string> = {
-  free: "text-slate-400 bg-white/5",
-  pro: "text-mint bg-mint/10",
-  elite: "text-yellow-400 bg-yellow-400/10",
-};
-
 export default function ProfileForm({ userId, userEmail }: { userId: string; userEmail: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
@@ -43,7 +36,6 @@ export default function ProfileForm({ userId, userEmail }: { userId: string; use
           setProfile({
             name: d.profile.name || "",
             email: d.profile.email || userEmail,
-            plan: d.profile.plan || "free",
             bio: d.profile.bio || "",
             weightKg: d.profile.weightKg ? String(d.profile.weightKg) : "",
             heightCm: d.profile.heightCm ? String(d.profile.heightCm) : "",
@@ -111,9 +103,6 @@ export default function ProfileForm({ userId, userEmail }: { userId: string; use
         <div className="flex-1 min-w-0">
           <p className="font-black text-white text-lg truncate">{profile.name || "No name set"}</p>
           <p className="text-slate-400 text-sm truncate">{profile.email}</p>
-          <span className={`mt-1.5 inline-block rounded-full px-3 py-0.5 text-xs font-bold capitalize ${PLAN_COLORS[profile.plan] || "text-slate-400 bg-white/5"}`}>
-            {profile.plan} plan
-          </span>
         </div>
       </div>
 

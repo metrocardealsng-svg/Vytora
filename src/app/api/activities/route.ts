@@ -78,20 +78,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const [me] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (me && me.plan === "free") {
-      const [{ count }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(activities)
-        .where(eq(activities.userId, userId));
-      if (count >= 20) {
-        return Response.json(
-          { error: "Free plan limit reached (20 activities). Upgrade to Pro for unlimited history." },
-          { status: 402 }
-        );
-      }
-    }
-
     const steps = Math.round(Number(body.steps) || 0);
     const distanceMeters = Number(body.distanceMeters) || 0;
 

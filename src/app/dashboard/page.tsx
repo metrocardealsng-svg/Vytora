@@ -13,14 +13,9 @@ import ActivityList from "@/components/ActivityList";
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ upgraded?: string; demo?: string }>;
-}) {
+export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const params = await searchParams;
 
   const rows = await db
     .select()
@@ -58,28 +53,12 @@ export default async function DashboardPage({
       <Navbar />
       <main className="aurora flex-1">
         <div className="mx-auto max-w-6xl px-5 py-12">
-          {params.upgraded && (
-            <div className="mb-6 rounded-2xl border border-mint/30 bg-mint/10 px-5 py-4 text-sm text-mint">
-              🎉 You&apos;re now on the <strong className="capitalize">{params.upgraded}</strong> plan!
-              {params.demo ? " (Demo mode — Stripe keys not configured, upgrade simulated.)" : " Thanks for supporting Vytora."}
-            </div>
-          )}
-
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-black tracking-tight text-white">
                 Hi{user.name ? `, ${user.name.split(" ")[0]}` : ""} 👋
               </h1>
-              <p className="mt-1 text-slate-400">
-                You&apos;re on the{" "}
-                <span className="font-semibold capitalize text-mint">{user.plan}</span> plan.
-                {user.plan === "free" && (
-                  <>
-                    {" "}
-                    <Link href="/pricing" className="font-semibold text-mint underline">Upgrade →</Link>
-                  </>
-                )}
-              </p>
+              <p className="mt-1 text-slate-400">Every feature, unlocked. No plans, no limits.</p>
             </div>
             <Link
               href="/tracker"

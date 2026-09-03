@@ -21,8 +21,9 @@ export function formatDuration(seconds: number) {
 
 export function formatPace(secPerMile: number) {
   if (!secPerMile || !isFinite(secPerMile)) return "--:--";
-  const min = Math.floor(secPerMile / 60);
-  const sec = Math.round(secPerMile % 60);
+  const total = Math.round(secPerMile);
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
   return `${min}:${String(sec).padStart(2, "0")}`;
 }
 

@@ -36,15 +36,15 @@ const FAQS: FaqItem[] = [
   },
   {
     id: "faq-3",
-    question: "What's included in the free plan?",
+    question: "What's included for free?",
     answer:
-      "The free plan includes automatic step tracking, basic route mapping, weekly challenges, and 7 days of activity history — enough to build the habit before deciding if you want more.",
+      "Everything. Automatic step tracking, live GPS route maps, unlimited activity history, weekly challenges, nutrition and sleep tracking, and every feature we ship — no paid tiers, no paywalls.",
   },
   {
     id: "faq-4",
-    question: "Can I cancel Premium at any time?",
+    question: "Will Vytora ever charge for features?",
     answer:
-      "Yes. Premium is billed monthly with no lock-in, and you can cancel from your account settings at any time — you'll keep access until the end of the current billing period.",
+      "No. Vytora is free for every user, permanently — there's no upgrade to buy and nothing to cancel.",
   },
   {
     id: "faq-5",

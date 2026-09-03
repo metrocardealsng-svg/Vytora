@@ -19,7 +19,6 @@ export default async function AdminPage() {
       id: users.id,
       name: users.name,
       email: users.email,
-      plan: users.plan,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -32,22 +31,7 @@ export default async function AdminPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-8">
             <h1 className="text-3xl font-black text-white">Admin Panel</h1>
-            <p className="mt-1 text-slate-400">
-              {allUsers.length} users total. Tap a plan button to upgrade instantly.
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="mb-8 grid grid-cols-3 gap-4">
-            {(["free", "pro", "elite"] as const).map((p) => {
-              const count = allUsers.filter((u) => u.plan === p).length;
-              return (
-                <div key={p} className="glass rounded-2xl p-5 text-center">
-                  <p className="text-2xl font-black text-white">{count}</p>
-                  <p className="text-sm capitalize text-slate-400">{p}</p>
-                </div>
-              );
-            })}
+            <p className="mt-1 text-slate-400">{allUsers.length} users total.</p>
           </div>
 
           <AdminTable users={allUsers} />

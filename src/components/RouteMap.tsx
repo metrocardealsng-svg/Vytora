@@ -17,6 +17,22 @@ export default function RouteMap({
   const polylineRef = useRef<unknown>(null);
   const markerRef = useRef<unknown>(null);
 
+  // Live-position marker (accurate current location, shown even before the
+  // route has enough points to draw a polyline)
+  function ensureMarker(L: any, map: any, pos: [number, number]) {
+    if (markerRef.current) {
+      (markerRef.current as any).setLatLng(pos);
+      return;
+    }
+    const pulseIcon = L.divIcon({
+      className: "",
+      html: `<div style="width:16px;height:16px;background:#34e0a1;border-radius:50%;border:2px solid #06080c;box-shadow:0 0 0 4px rgba(52,224,161,0.3)"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+    markerRef.current = L.marker(pos, { icon: pulseIcon }).addTo(map);
+  }
+
   useEffect(() => {
     if (typeof window === "undefined" || !mapRef.current) return;
 
@@ -45,7 +61,7 @@ export default function RouteMap({
       const L = window.L;
       if (mapInstanceRef.current) return;
 
-      // Default center: Lagos, Nigeria
+      // Default center: Lagos, Nigeria — only used until a real fix comes in
       const defaultCenter: [number, number] = [6.5244, 3.3792];
       const center: [number, number] = route.length > 0
         ? [route[route.length - 1].lat, route[route.length - 1].lng]
@@ -62,60 +78,66 @@ export default function RouteMap({
 
       mapInstanceRef.current = map;
 
-      if (route.length > 1) {
+      if (route.length >= 1) {
         const latlngs = route.map((p) => [p.lat, p.lng] as [number, number]);
-        const poly = L.polyline(latlngs, {
-          color: "#34e0a1",
-          weight: 5,
-          opacity: 0.9,
-        }).addTo(map);
-        polylineRef.current = poly;
-        map.fitBounds(poly.getBounds(), { padding: [20, 20] });
-
-        const pulseIcon = L.divIcon({
-          className: "",
-          html: `<div style="width:16px;height:16px;background:#34e0a1;border-radius:50%;border:2px solid #06080c;box-shadow:0 0 0 4px rgba(52,224,161,0.3)"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        });
-        const last = latlngs[latlngs.length - 1];
-        const marker = L.marker(last, { icon: pulseIcon }).addTo(map);
-        markerRef.current = marker;
-      } else if (active) {
-        // Show current location
-        navigator.geolocation?.getCurrentPosition((pos) => {
-          // @ts-ignore
-          const m = mapInstanceRef.current as any;
-          if (m) m.setView([pos.coords.latitude, pos.coords.longitude], 16);
-        });
+        if (route.length > 1) {
+          const poly = L.polyline(latlngs, {
+            color: "#34e0a1",
+            weight: 5,
+            opacity: 0.9,
+          }).addTo(map);
+          polylineRef.current = poly;
+          map.fitBounds(poly.getBounds(), { padding: [20, 20] });
+        }
+        ensureMarker(L, map, latlngs[latlngs.length - 1]);
       }
     };
 
     initMap();
   }, []);
 
+  // As soon as tracking goes active, snap to the device's real position
+  // immediately instead of waiting on the default Lagos center or for
+  // enough GPS points to accumulate a route.
+  useEffect(() => {
+    if (!active || route.length > 0 || !navigator.geolocation) return;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      if (cancelled) return;
+      const map = mapInstanceRef.current as any;
+      // @ts-ignore
+      const L = window.L;
+      if (!map || !L) return;
+      const here: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+      map.setView(here, 16);
+      ensureMarker(L, map, here);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, route.length]);
+
   // Update polyline and marker when route changes
   useEffect(() => {
-    if (!mapInstanceRef.current || route.length < 2) return;
+    if (!mapInstanceRef.current || route.length === 0) return;
     // @ts-ignore
     const L = window.L;
     if (!L) return;
 
     const latlngs = route.map((p) => [p.lat, p.lng] as [number, number]);
     const map = mapInstanceRef.current as any;
-
-    if (polylineRef.current) {
-      (polylineRef.current as any).setLatLngs(latlngs);
-    } else {
-      const poly = L.polyline(latlngs, { color: "#34e0a1", weight: 5, opacity: 0.9 }).addTo(map);
-      polylineRef.current = poly;
-    }
-
     const last = latlngs[latlngs.length - 1];
-    if (markerRef.current) {
-      (markerRef.current as any).setLatLng(last);
+
+    if (route.length > 1) {
+      if (polylineRef.current) {
+        (polylineRef.current as any).setLatLngs(latlngs);
+      } else {
+        const poly = L.polyline(latlngs, { color: "#34e0a1", weight: 5, opacity: 0.9 }).addTo(map);
+        polylineRef.current = poly;
+      }
     }
 
+    ensureMarker(L, map, last);
     map.setView(last, map.getZoom());
   }, [route]);
 

@@ -13,12 +13,12 @@ export default function FreeBanner() {
           <div className="relative z-10">
             {/* Badge */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur">
-              <span className="text-sm font-black text-ink">🎉 LIMITED TIME OFFER</span>
+              <span className="text-sm font-black text-ink">🎉 100% FREE</span>
             </div>
 
             {/* Heading */}
             <h2 className="text-4xl font-black tracking-tight text-ink sm:text-5xl">
-              All Features Free for 6 Months
+              All Features Free. Forever.
             </h2>
 
             {/* Subheading */}
@@ -54,13 +54,13 @@ export default function FreeBanner() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-black">✓</div>
-                <p className="text-sm font-semibold">6 Months Free</p>
+                <p className="text-sm font-semibold">No Upgrades, Ever</p>
               </div>
             </div>
 
             {/* Fine print */}
             <p className="mx-auto mt-8 max-w-lg text-xs text-ink/60">
-              After 6 months, pricing will be announced. Early users get special lifetime benefits. No surprise charges.
+              Vytora is free for every user, permanently. No hidden tiers, no surprise charges.
             </p>
           </div>
         </div>
