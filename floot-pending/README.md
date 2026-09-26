@@ -12,6 +12,7 @@ after the limit resets (00:00 UTC), then verify.
 3. `03-coach-ui-workout-links.patch`: formatted replies (bold, bullets), action buttons,
    guest mode UI, `/tracker?workout=<id>` deep links.
 4. `04-landing-vyto.patch`: Vyto chat bubble on the landing/login pages.
+5. `05-signup-attribution.md`: UTM/ref capture + users.signup_source so the marketing agent can measure cost per signup per post/campaign. Then publish the app (floot subdomain "vytora") and put the live URL into marketing-agent/LEDGER.json `app_url`.
 
 After applying:
 - Run `helpers/fitness.spec.tsx` and `helpers/routeSplits.spec.tsx`.
