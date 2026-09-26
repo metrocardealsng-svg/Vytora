@@ -1,0 +1,202 @@
+*** Begin Patch
+*** Add File: components/CoachChat.tsx
++import { useEffect, useRef, useState } from "react";
++import { Link } from "react-router-dom";
++import { ArrowRight, RotateCcw, Send } from "lucide-react";
++import { Button } from "./Button";
++import { Input } from "./Input";
++import { RichText } from "./RichText";
++import { useAuth } from "../helpers/useAuth";
++import { COACH_SUGGESTIONS, useCoachConversation } from "../helpers/useCoachConversation";
++import styles from "./CoachChat.module.css";
++
++interface CoachChatProps {
++  className?: string;
++  variant?: "widget" | "page";
++}
++
++const Pulse = () => (
++  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
++    <path d="M3 12h4l2 6 4-14 2 8h6" />
++  </svg>
++);
++
++export const CoachChat = ({ className, variant = "page" }: CoachChatProps) => {
++  const { authState } = useAuth();
++  const authed = authState.type === "authenticated";
++  const { messages, send, reset, isThinking, guestRemaining } = useCoachConversation();
++  const [input, setInput] = useState("");
++  const scrollRef = useRef<HTMLDivElement>(null);
++
++  useEffect(() => {
++    const el = scrollRef.current;
++    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
++  }, [messages, isThinking]);
++
++  const submit = (text?: string) => {
++    const value = (text ?? input).trim();
++    if (!value) return;
++    send(value);
++    setInput("");
++  };
++
++  return (
++    <div className={`${styles.chat} ${styles[variant]} ${className ?? ""}`}>
++      <div className={styles.head}>
++        <span className={styles.botAvatar}>
++          <Pulse />
++        </span>
++        <div>
++          <div className={styles.name}>Vyto</div>
++          <div className={styles.sub}>{authed ? "AI coach · sees your stats · can log for you" : "AI coach · guest mode"}</div>
++        </div>
++        {messages.length > 1 && (
++          <Button variant="ghost" size="icon-md" onClick={reset} aria-label="New conversation" className={styles.reset}>
++            <RotateCcw />
++          </Button>
++        )}
++      </div>
++
++      <div className={styles.messages} ref={scrollRef}>
++        {messages.map((m, i) => (
++          <div key={i} className={`${styles.row} ${m.role === "user" ? styles.rowUser : ""}`}>
++            {m.role === "assistant" && (
++              <span className={styles.miniAvatar}>
++                <Pulse />
++              </span>
++            )}
++            <div className={styles.msgCol}>
++              <div className={`${styles.bubble} ${m.role === "user" ? styles.userBubble : styles.botBubble}`}>
++                {m.role === "assistant" ? <RichText text={m.content} /> : m.content}
++              </div>
++              {m.actions && m.actions.length > 0 && (
++                <div className={styles.actions}>
++                  {m.actions.map((a) => (
++                    <Button key={a.href} asChild size="sm" className={styles.actionBtn}>
++                      <Link to={a.href}>
++                        {a.label} <ArrowRight size={14} />
++                      </Link>
++                    </Button>
++                  ))}
++                </div>
++              )}
++            </div>
++          </div>
++        ))}
++        {isThinking && (
++          <div className={styles.row}>
++            <span className={styles.miniAvatar}>
++              <Pulse />
++            </span>
++            <div className={`${styles.bubble} ${styles.botBubble} ${styles.typing}`}>
++              <span />
++              <span />
++              <span />
++            </div>
++          </div>
++        )}
++      </div>
++
++      {messages.length <= 1 && (
++        <div className={styles.suggestions}>
++          {COACH_SUGGESTIONS.map((s) => (
++            <button key={s} type="button" className={styles.chip} onClick={() => submit(s)}>
++              {s}
++            </button>
++          ))}
++        </div>
++      )}
++      {!authed && authState.type !== "loading" && (
++        <div className={styles.guestNote}>
++          {guestRemaining !== null ? `${guestRemaining} free guest messages left this hour. ` : "Guest mode. "}
++          <Link to="/register">Join free</Link> so Vyto can see your runs and log for you.
++        </div>
++      )}
++      <form
++        className={styles.composer}
++        onSubmit={(e) => {
++          e.preventDefault();
++          submit();
++        }}
++      >
++        <Input
++          value={input}
++          onChange={(e) => setInput(e.target.value)}
++          placeholder={authed ? "Ask Vyto, or tell it what you ate..." : "Ask Vyto anything..."}
++          maxLength={2000}
++          aria-label="Message Vyto"
++        />
++        <Button type="submit" size="icon-lg" disabled={!input.trim() || isThinking} aria-label="Send">
++          <Send />
++        </Button>
++      </form>
++    </div>
++  );
++};
+*** Update File: components/CoachChat.module.css
+@@
+-.gate {
++.msgCol {
++  display: flex;
++  flex-direction: column;
++  gap: 6px;
++  max-width: 86%;
++  min-width: 0;
++}
++
++.rowUser .msgCol {
++  align-items: flex-end;
++}
++
++.msgCol .bubble {
++  max-width: 100%;
++}
++
++.actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++
++.actionBtn {
++  border-radius: var(--radius-full);
++  font-weight: 700;
++  height: 2rem;
++  padding: 0 var(--spacing-3);
++}
++
++.guestNote {
++  padding: 0 var(--spacing-4) var(--spacing-2);
++  font-size: 0.72rem;
++  color: var(--muted-foreground);
++}
++
++.guestNote a {
++  color: var(--primary);
++  font-weight: 600;
++}
++
++.gate {
+*** Update File: components/TrackerSetup.tsx
+@@
+-import { useState } from "react";
+-import { Link } from "react-router-dom";
++import { useEffect, useState } from "react";
++import { Link, useSearchParams } from "react-router-dom";
+@@
+   const gpsType = !TIME_BASED_ACTIVITIES.includes(t.activityType);
+   const prs = (records.data ?? []).filter((r) => r.type === t.activityType);
++  const [params] = useSearchParams();
++
++  // Deep link from Vyto / calisthenics: /tracker?workout=<id>
++  useEffect(() => {
++    const id = params.get("workout");
++    const w = id ? WORKOUTS.find((x) => x.id === id) : null;
++    if (w && t.status === "idle") {
++      if (TIME_BASED_ACTIVITIES.includes(t.activityType)) t.setActivityType("run");
++      t.setMode({ kind: "workout", workout: w });
++      setTab("workout");
++    }
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [params]);
+*** End Patch

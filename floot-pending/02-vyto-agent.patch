@@ -1,0 +1,634 @@
+*** Begin Patch
+*** Add File: helpers/coachAgent.tsx
++// Backend-only: Vyto, the Vytora AI coach, as a small tool-using agent.
++// Logged-in members: Vyto can read their real data and take actions (log food,
++// log sleep, create goals, recommend workouts). Guests: general coaching only.
++import { flootAi } from "@floot/ai";
++import { sql } from "kysely";
++import { db } from "./db";
++import { NIGERIAN_FOODS, FITNESS_GOAL_LABELS } from "./nigerianFoods";
++import { WORKOUTS } from "./workouts";
++import { loadRecords } from "./personalRecords";
++import { buildOverview } from "./userStats";
++import { ACTIVITY_LABELS, EFFORTS, formatDuration, formatKm, formatPace, paceSecPerKm } from "./fitness";
++import { todayInTimeZone, addDays } from "./serverUtils";
++import { GoalMetricArrayValues, GoalPeriodArrayValues, MealTypeArrayValues, type GoalMetric, type GoalPeriod, type MealType } from "./schema";
++import type { User } from "./User";
++
++export type CoachAction = { label: string; href: string };
++export type CoachResult = { reply: string; actions: CoachAction[]; changed: string[] };
++type Msg = { role: "user" | "assistant"; content: string };
++
++const BASE_PROMPT = `You are Vyto, the AI fitness coach inside Vytora, a fitness app built for Nigerians.
++You coach walking, running, Nigerian nutrition, sleep and military-style calisthenics.
++
++Style:
++- Warm, confident, motivating. Light Nigerian expressions are welcome ("oya", "no wahala", "you dey try") but don't overdo it.
++- Short by default: 2-6 sentences. Use a short "- " bullet list only for plans or options. You may use **bold** for key numbers. No headings, no tables.
++- Always end with one concrete action for today.
++- Recommend affordable Nigerian foods (beans, moi moi, eggs, fish, yam, plantain, egusi, pepper soup) with rough naira costs when useful.
++- Account for heat: train before 7am or after 6pm, hydrate, electrolytes.
++- Safety: for chest pain, fainting, injuries, pregnancy, diabetes, heart or other medical conditions, advise seeing a doctor. Never recommend extreme diets or dangerous training.
++- Be accurate. Never invent the member's numbers: use tools to look them up.`;
++
++const MEMBER_PROMPT = `
++Tools:
++- Look things up with tools before answering questions about the member's own training, records, food or sleep.
++- When the member tells you what they ate, slept, or wants a goal, DO it with the matching tool, then confirm briefly what you logged.
++- When suggesting a structured session, call recommend_workout so they get a Start button.
++- When pointing them to a screen, call open_page so they get a button.
++Available guided workouts: ${WORKOUTS.map((w) => `${w.id} (${w.name}, ${w.level})`).join("; ")}.`;
++
++const GUEST_PROMPT = `
++This person is a guest (not logged in). You can't see or change any data. If they want tracking, logging or personal advice based on history, tell them a free account unlocks it (all features free for 6 months).`;
++
++const nullable = (t: string) => ({ type: [t, "null"] });
++
++const TOOLS = [
++  {
++    type: "function",
++    name: "get_overview",
++    description: "Today's steps/distance/calories, step goal, streak, weekly totals, level, and goal progress.",
++    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "get_recent_activities",
++    description: "The member's most recent activities with distance, time, pace, steps, elevation.",
++    parameters: { type: "object", properties: { limit: nullable("integer") }, required: ["limit"], additionalProperties: false },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "get_personal_records",
++    description: "Best times at 400m, 1k, 1 mile, 5k, 10k, half, marathon per activity type.",
++    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "get_nutrition",
++    description: "Food logged on a date (default today) with calorie and macro totals and the calorie goal.",
++    parameters: { type: "object", properties: { date: { ...nullable("string"), description: "YYYY-MM-DD or null for today" } }, required: ["date"], additionalProperties: false },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "get_sleep",
++    description: "Recent nights of sleep: hours and quality 1-10.",
++    parameters: { type: "object", properties: { nights: nullable("integer") }, required: ["nights"], additionalProperties: false },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "log_food",
++    description:
++      "Log a food the member ate. For Nigerian foods in the database, leave nutrition fields null and they are filled in. For anything else, estimate per-serving calories and macros.",
++    parameters: {
++      type: "object",
++      properties: {
++        food_name: { type: "string" },
++        meal_type: { type: "string", enum: MealTypeArrayValues },
++        quantity: { ...nullable("number"), description: "servings, default 1" },
++        calories_per_serving: nullable("number"),
++        protein_g: nullable("number"),
++        carbs_g: nullable("number"),
++        fat_g: nullable("number"),
++      },
++      required: ["food_name", "meal_type", "quantity", "calories_per_serving", "protein_g", "carbs_g", "fat_g"],
++      additionalProperties: false,
++    },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "log_sleep",
++    description: "Log a night of sleep. date = the night it started (YYYY-MM-DD), null = last night.",
++    parameters: {
++      type: "object",
++      properties: { date: nullable("string"), hours: { type: "number" }, quality: { type: "integer", description: "1-10" } },
++      required: ["date", "hours", "quality"],
++      additionalProperties: false,
++    },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "create_goal",
++    description: "Create a goal. Metrics: steps, distance_km, calories_burned, workouts, active_minutes, sleep_hours, custom.",
++    parameters: {
++      type: "object",
++      properties: {
++        title: { type: "string" },
++        metric: { type: "string", enum: GoalMetricArrayValues },
++        period: { type: "string", enum: GoalPeriodArrayValues },
++        target: { type: "number" },
++      },
++      required: ["title", "metric", "period", "target"],
++      additionalProperties: false,
++    },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "recommend_workout",
++    description: "Recommend one guided workout; the member gets a button that opens it in the tracker.",
++    parameters: {
++      type: "object",
++      properties: { workout_id: { type: "string", enum: WORKOUTS.map((w) => w.id) } },
++      required: ["workout_id"],
++      additionalProperties: false,
++    },
++    strict: true,
++  },
++  {
++    type: "function",
++    name: "open_page",
++    description: "Give the member a button to a screen in the app.",
++    parameters: {
++      type: "object",
++      properties: {
++        page: { type: "string", enum: ["tracker", "nutrition", "sleep", "goals", "records", "calisthenics", "tribe", "challenges", "profile"] },
++        label: { type: "string", description: "Short button text, e.g. 'Log dinner'" },
++      },
++      required: ["page", "label"],
++      additionalProperties: false,
++    },
++    strict: true,
++  },
++];
++
++function findFood(name: string) {
++  const q = name.toLowerCase();
++  const words = q.split(/[^a-z]+/).filter((w) => w.length > 2);
++  let best: (typeof NIGERIAN_FOODS)[number] | null = null;
++  let bestScore = 0;
++  for (const f of NIGERIAN_FOODS) {
++    const n = f.name.toLowerCase();
++    const score = words.reduce((s, w) => s + (n.includes(w) ? 1 : 0), 0) + (n.startsWith(q) ? 2 : 0);
++    if (score > bestScore) {
++      best = f;
++      bestScore = score;
++    }
++  }
++  return bestScore > 0 ? best : null;
++}
++
++const clampNum = (v: unknown, min: number, max: number, dflt: number) =>
++  typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : dflt;
++const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
++
++async function runTool(
++  name: string,
++  args: Record<string, unknown>,
++  user: User,
++  tz: string,
++  ctx: { actions: CoachAction[]; changed: Set<string> },
++): Promise<unknown> {
++  const today = todayInTimeZone(tz);
++  switch (name) {
++    case "get_overview": {
++      const o = await buildOverview(user.id, tz);
++      return {
++        today: { steps: o.todaySteps, step_goal: o.stepGoal, km: +(o.todayDistanceMeters / 1000).toFixed(2), calories: o.todayCalories },
++        last_7_days: { km: +(o.weekDistanceMeters / 1000).toFixed(1), steps: o.weekSteps, previous_7_days_steps: o.lastWeekSteps },
++        streak: o.streak,
++        level: `${o.level.level} ${o.level.title}`,
++        lifetime: { activities: o.totals.activities, km: +(o.totals.distanceMeters / 1000).toFixed(1), steps: o.totals.steps },
++        goals: o.goals.map((g) => ({ title: g.title, progress: g.progress, target: g.target, unit: g.unit, period: g.period, done: g.completed })),
++        badges_earned: o.badges.filter((b) => b.earned).map((b) => b.name),
++      };
++    }
++    case "get_recent_activities": {
++      const limit = clampNum(args.limit, 1, 20, 7);
++      const rows = await db
++        .selectFrom("activities")
++        .select(["id", "type", "title", "distanceMeters", "durationSeconds", "steps", "elevationGainM", "startedAt", "workoutName"])
++        .where("userId", "=", user.id)
++        .orderBy("startedAt", "desc")
++        .limit(limit)
++        .execute();
++      return rows.map((r) => ({
++        date: r.startedAt.toISOString().slice(0, 16).replace("T", " "),
++        type: ACTIVITY_LABELS[r.type],
++        title: r.title,
++        km: +(r.distanceMeters / 1000).toFixed(2),
++        time: formatDuration(r.durationSeconds),
++        pace_per_km: r.distanceMeters > 200 ? formatPace(paceSecPerKm(r.durationSeconds, r.distanceMeters)) : null,
++        steps: r.steps,
++        climb_m: r.elevationGainM,
++        workout: r.workoutName,
++      }));
++    }
++    case "get_personal_records": {
++      const recs = await loadRecords(user.id);
++      return recs.map((r) => {
++        const e = EFFORTS.find((x) => x.key === r.effort)!;
++        return { type: r.type, distance: e.label, time: formatDuration(r.seconds), pace_per_km: formatPace(r.seconds / (e.meters / 1000)), date: r.startedAt.toISOString().slice(0, 10) };
++      });
++    }
++    case "get_nutrition": {
++      const date = isDay(args.date) ? args.date : today;
++      const [logs, goal] = await Promise.all([
++        db
++          .selectFrom("foodLogs")
++          .select(["foodName", "mealType", "quantity", "calories", "proteinG", "carbsG", "fatG"])
++          .where("userId", "=", user.id)
++          .where(sql<boolean>`logged_on = ${date}::date`)
++          .execute(),
++        db.selectFrom("users").select(["dailyCalorieGoal", "fitnessGoal", "weightKg"]).where("id", "=", user.id).executeTakeFirstOrThrow(),
++      ]);
++      const t = logs.reduce((s, l) => ({ kcal: s.kcal + l.calories, p: s.p + l.proteinG, c: s.c + l.carbsG, f: s.f + l.fatG }), { kcal: 0, p: 0, c: 0, f: 0 });
++      return {
++        date,
++        calorie_goal: goal.dailyCalorieGoal,
++        fitness_goal: FITNESS_GOAL_LABELS[goal.fitnessGoal],
++        weight_kg: goal.weightKg,
++        totals: { kcal: t.kcal, protein_g: Math.round(t.p), carbs_g: Math.round(t.c), fat_g: Math.round(t.f) },
++        items: logs,
++      };
++    }
++    case "get_sleep": {
++      const nights = clampNum(args.nights, 1, 30, 7);
++      return db
++        .selectFrom("sleepLogs")
++        .select([sql<string>`to_char(slept_on, 'YYYY-MM-DD')`.as("night"), "hours", "quality", "notes"])
++        .where("userId", "=", user.id)
++        .orderBy("sleptOn", "desc")
++        .limit(nights)
++        .execute();
++    }
++    case "log_food": {
++      const foodName = String(args.food_name ?? "").trim().slice(0, 120);
++      const mealType = (MealTypeArrayValues as string[]).includes(String(args.meal_type)) ? (args.meal_type as MealType) : "snack";
++      const qty = clampNum(args.quantity, 0.25, 20, 1);
++      if (!foodName) return { error: "food_name required" };
++      const match = typeof args.calories_per_serving === "number" ? null : findFood(foodName);
++      const kcal = match ? match.calories : clampNum(args.calories_per_serving, 0, 5000, NaN);
++      if (!Number.isFinite(kcal)) return { error: "Unknown food: estimate calories_per_serving and try again." };
++      const per = match
++        ? { p: match.proteinG, c: match.carbsG, f: match.fatG, unit: match.unit, name: match.name }
++        : { p: clampNum(args.protein_g, 0, 500, 0), c: clampNum(args.carbs_g, 0, 1000, 0), f: clampNum(args.fat_g, 0, 500, 0), unit: "serving", name: foodName };
++      await db
++        .insertInto("foodLogs")
++        .values({
++          userId: user.id,
++          foodName: per.name,
++          mealType,
++          quantity: qty,
++          unit: per.unit,
++          calories: Math.round(kcal * qty),
++          proteinG: Math.round(per.p * qty * 10) / 10,
++          carbsG: Math.round(per.c * qty * 10) / 10,
++          fatG: Math.round(per.f * qty * 10) / 10,
++          loggedOn: today,
++        })
++        .execute();
++      ctx.changed.add("nutrition");
++      return { logged: per.name, meal: mealType, quantity: qty, calories: Math.round(kcal * qty) };
++    }
++    case "log_sleep": {
++      const day = isDay(args.date) ? args.date : addDays(today, -1);
++      const hours = clampNum(args.hours, 0.5, 16, 7);
++      const quality = Math.round(clampNum(args.quality, 1, 10, 7));
++      await db
++        .insertInto("sleepLogs")
++        .values({ userId: user.id, sleptOn: day, hours, quality })
++        .onConflict((oc) => oc.columns(["userId", "sleptOn"]).doUpdateSet({ hours, quality }))
++        .execute();
++      ctx.changed.add("sleep");
++      return { logged_night: day, hours, quality };
++    }
++    case "create_goal": {
++      const metric = (GoalMetricArrayValues as string[]).includes(String(args.metric)) ? (args.metric as GoalMetric) : "custom";
++      const period = (GoalPeriodArrayValues as string[]).includes(String(args.period)) ? (args.period as GoalPeriod) : "weekly";
++      const target = clampNum(args.target, 0.1, 10_000_000, 1);
++      const title = String(args.title ?? "My goal").trim().slice(0, 80) || "My goal";
++      const { count } = await db.selectFrom("goals").select(sql<number>`count(*)::int`.as("count")).where("userId", "=", user.id).executeTakeFirstOrThrow();
++      if (count >= 30) return { error: "Member already has 30 goals." };
++      await db.insertInto("goals").values({ userId: user.id, title, metric, period, target, xp: 50 }).execute();
++      ctx.changed.add("goals");
++      ctx.actions.push({ label: "View goals", href: "/goals" });
++      return { created: title, metric, period, target };
++    }
++    case "recommend_workout": {
++      const w = WORKOUTS.find((x) => x.id === args.workout_id);
++      if (!w) return { error: "unknown workout" };
++      ctx.actions.push({ label: `Start ${w.name}`, href: `/tracker?workout=${w.id}` });
++      return { recommended: w.name, description: w.description };
++    }
++    case "open_page": {
++      const page = String(args.page);
++      const label = String(args.label ?? "Open").slice(0, 40);
++      ctx.actions.push({ label, href: `/${page}` });
++      return { ok: true };
++    }
++    default:
++      return { error: `Unknown tool ${name}` };
++  }
++}
++
++type OutItem = { type: string; content?: Array<{ type: string; text?: string }>; name?: string; arguments?: string; call_id?: string };
++
++function textOf(output: OutItem[]): string {
++  return output
++    .filter((o) => o.type === "message")
++    .flatMap((o) => o.content ?? [])
++    .filter((c) => c.type === "output_text" && typeof c.text === "string")
++    .map((c) => c.text as string)
++    .join("\n")
++    .trim();
++}
++
++export async function runCoach(opts: { user: User | null; messages: Msg[]; tz: string }): Promise<CoachResult> {
++  const { user, messages, tz } = opts;
++  const ctx = { actions: [] as CoachAction[], changed: new Set<string>() };
++  let instructions = BASE_PROMPT + (user ? MEMBER_PROMPT : GUEST_PROMPT);
++  if (user) {
++    const p = await db
++      .selectFrom("users")
++      .select(["displayName", "fitnessGoal", "weightKg", "heightCm", "location", "dailyStepGoal"])
++      .where("id", "=", user.id)
++      .executeTakeFirstOrThrow();
++    instructions += `\n\nMember: ${p.displayName}. Goal: ${FITNESS_GOAL_LABELS[p.fitnessGoal]}.${p.weightKg ? ` Weight ${p.weightKg} kg.` : ""}${
++      p.heightCm ? ` Height ${p.heightCm} cm.` : ""
++    }${p.location ? ` Lives in ${p.location}.` : ""} Daily step goal ${p.dailyStepGoal}. Today is ${todayInTimeZone(tz)} (${tz}).`;
++  }
++
++  // eslint-disable-next-line @typescript-eslint/no-explicit-any
++  const input: any[] = messages.slice(-14).map((m) => ({ type: "message", role: m.role, content: m.content }));
++  for (let round = 0; round < 6; round++) {
++    const r = await flootAi.chat({
++      model: "gpt-6-luna",
++      instructions,
++      input,
++      ...(user ? { tools: TOOLS } : {}),
++      reasoning: { effort: "low" },
++      max_output_tokens: 1400,
++    });
++    const output = (r.output ?? []) as OutItem[];
++    const calls = output.filter((o) => o.type === "function_call");
++    if (calls.length === 0 || !user) {
++      const reply = textOf(output) || (typeof r.output_text === "string" ? r.output_text.trim() : "");
++      return { reply: reply || "I no catch that one. Try asking again?", actions: dedupe(ctx.actions), changed: [...ctx.changed] };
++    }
++    for (const c of calls) {
++      input.push({ type: "function_call", call_id: c.call_id, name: c.name, arguments: c.arguments ?? "{}" });
++      let result: unknown;
++      try {
++        result = await runTool(c.name ?? "", JSON.parse(c.arguments || "{}"), user, tz, ctx);
++      } catch (e) {
++        console.error("Vyto tool failed", c.name, e);
++        result = { error: "Tool failed. Tell the member briefly and continue." };
++      }
++      input.push({ type: "function_call_output", call_id: c.call_id, output: JSON.stringify(result) });
++    }
++  }
++  return { reply: "Done. Anything else?", actions: dedupe(ctx.actions), changed: [...ctx.changed] };
++}
++
++function dedupe(actions: CoachAction[]): CoachAction[] {
++  const seen = new Set<string>();
++  return actions.filter((a) => (seen.has(a.href) ? false : (seen.add(a.href), true))).slice(0, 3);
++}
+*** Add File: helpers/coachAgent.module.css
++
+*** Add File: endpoints/coach/chat_POST.schema.ts
++import { z } from "zod";
++import { apiPost } from "../../helpers/apiFetch";
++import type { CoachAction } from "../../helpers/coachAgent";
++
++export const schema = z.object({
++  messages: z
++    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(4000) }))
++    .min(1)
++    .max(40),
++  tz: z.string().max(64).optional(),
++});
++export type InputType = z.infer<typeof schema>;
++export type OutputType = { reply: string; actions: CoachAction[]; changed: string[]; guestRemaining: number | null };
++
++export const postCoachChat = (body: InputType, init?: RequestInit) =>
++  apiPost<OutputType>("/_api/coach/chat", schema.parse(body), init);
+*** Add File: endpoints/coach/chat_POST.ts
++import superjson from "superjson";
++import { createHash } from "crypto";
++import { sql } from "kysely";
++import { FlootAiOutOfCreditsError, FlootAiRateLimitError } from "@floot/ai";
++import { db } from "../../helpers/db";
++import { getServerUserSession } from "../../helpers/getServerUserSession";
++import { runCoach } from "../../helpers/coachAgent";
++import { handleErrors, jsonResponse, safeTimeZone, HttpError } from "../../helpers/serverUtils";
++import { schema, type OutputType } from "./chat_POST.schema";
++
++const GUEST_LIMIT_PER_HOUR = 10;
++
++export async function handle(request: Request) {
++  return handleErrors(async () => {
++    const { messages, tz } = schema.parse(superjson.parse(await request.text()));
++    let user = null;
++    try {
++      user = (await getServerUserSession(request)).user;
++    } catch {
++      user = null;
++    }
++
++    let guestRemaining: number | null = null;
++    if (!user) {
++      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
++      const key = createHash("sha256").update(`${ip}|${request.headers.get("user-agent") ?? ""}`).digest("hex");
++      const row = await db
++        .insertInto("coachGuestUsage")
++        .values({ guestKey: key, windowStart: new Date(), count: 1 })
++        .onConflict((oc) =>
++          oc.column("guestKey").doUpdateSet({
++            count: sql`case when coach_guest_usage.window_start < now() - interval '1 hour' then 1 else coach_guest_usage.count + 1 end`,
++            windowStart: sql`case when coach_guest_usage.window_start < now() - interval '1 hour' then now() else coach_guest_usage.window_start end`,
++          }),
++        )
++        .returning("count")
++        .executeTakeFirstOrThrow();
++      if (row.count > GUEST_LIMIT_PER_HOUR) {
++        throw new HttpError(429, "You've used your free guest messages for this hour. Create a free account to keep chatting with Vyto.");
++      }
++      guestRemaining = GUEST_LIMIT_PER_HOUR - row.count;
++    }
++
++    try {
++      const result = await runCoach({ user, messages, tz: safeTimeZone(tz) });
++      return jsonResponse({ ...result, guestRemaining } satisfies OutputType);
++    } catch (err) {
++      if (err instanceof FlootAiOutOfCreditsError) {
++        return jsonResponse({ error: "Vyto is resting right now. Please try again later.", code: "OUT_OF_CREDITS" }, 503);
++      }
++      if (err instanceof FlootAiRateLimitError) {
++        return jsonResponse({ error: "Vyto is busy. Try again in a minute." }, 429);
++      }
++      throw err;
++    }
++  });
++}
+*** Add File: helpers/useCoachConversation.tsx
++// Vyto chat conversation state, kept in localStorage so it survives navigation
++// between the floating widget and the full Coach page.
++import { useCallback, useEffect, useState } from "react";
++import { useQueryClient } from "@tanstack/react-query";
++import { toast } from "sonner";
++import { useCoachChat, queryKeys } from "./useVytoraData";
++import { ApiError } from "./apiFetch";
++import type { CoachAction } from "./coachAgent";
++
++export type CoachMessage = { role: "user" | "assistant"; content: string; actions?: CoachAction[] };
++
++const KEY = "vytora.coach.v2";
++const GREETING: CoachMessage = {
++  role: "assistant",
++  content:
++    "Hey! I'm **Vyto**, your coach. I can see your runs, records, food and sleep, log meals for you (\"I ate 2 plates of jollof for lunch\"), set goals and plan your training. What are we working on?",
++};
++
++export const COACH_SUGGESTIONS = [
++  "How was my training this week?",
++  "I ate jollof rice and chicken for lunch",
++  "Plan my week to run my first 5K",
++  "What should I eat after a 5 km run?",
++];
++
++function load(): CoachMessage[] {
++  try {
++    const raw = localStorage.getItem(KEY);
++    const parsed = raw ? (JSON.parse(raw) as CoachMessage[]) : null;
++    if (Array.isArray(parsed) && parsed.length > 0) return parsed.slice(-40);
++  } catch {
++    /* ignore */
++  }
++  return [GREETING];
++}
++
++export function useCoachConversation() {
++  const [messages, setMessages] = useState<CoachMessage[]>(load);
++  const [guestRemaining, setGuestRemaining] = useState<number | null>(null);
++  const chat = useCoachChat();
++  const qc = useQueryClient();
++
++  useEffect(() => {
++    try {
++      localStorage.setItem(KEY, JSON.stringify(messages.slice(-40)));
++    } catch {
++      /* ignore */
++    }
++  }, [messages]);
++
++  const send = useCallback(
++    (text: string) => {
++      const content = text.trim();
++      if (!content || chat.isPending) return;
++      const next: CoachMessage[] = [...messages, { role: "user", content }];
++      setMessages(next);
++      const history = next.filter((m) => m !== GREETING).slice(-20).map(({ role, content: c }) => ({ role, content: c }));
++      chat.mutate(
++        { messages: history },
++        {
++          onSuccess: (data) => {
++            setMessages((prev) => [...prev, { role: "assistant", content: data.reply, actions: data.actions }]);
++            setGuestRemaining(data.guestRemaining);
++            if (data.changed.length) {
++              qc.invalidateQueries({ queryKey: queryKeys.overview });
++              if (data.changed.includes("nutrition")) qc.invalidateQueries({ queryKey: queryKeys.nutritionAll });
++              if (data.changed.includes("sleep")) qc.invalidateQueries({ queryKey: queryKeys.sleep });
++            }
++          },
++          onError: (err) => {
++            if (err instanceof ApiError && err.code === "OUT_OF_CREDITS") {
++              console.warn("Vyto unavailable: out of credits");
++              setMessages((prev) => [...prev, { role: "assistant", content: "I'm resting right now. Try me again later." }]);
++              return;
++            }
++            toast.error(err instanceof Error ? err.message : "Vyto couldn't reply. Try again.");
++            setMessages((prev) => prev.slice(0, -1));
++          },
++        },
++      );
++    },
++    [messages, chat, qc],
++  );
++
++  const reset = useCallback(() => setMessages([GREETING]), []);
++
++  return { messages, send, reset, isThinking: chat.isPending, guestRemaining };
++}
+*** Add File: components/RichText.tsx
++import { Fragment, type ReactNode } from "react";
++import styles from "./RichText.module.css";
++
++/** Tiny safe renderer for Vyto replies: **bold**, "- " bullets, "1." lists, line breaks. */
++export const RichText = ({ text, className }: { text: string; className?: string }) => {
++  const lines = text.split("\n");
++  const blocks: ReactNode[] = [];
++  let list: { ordered: boolean; items: string[] } | null = null;
++  const flush = () => {
++    if (!list) return;
++    const Tag = list.ordered ? "ol" : "ul";
++    blocks.push(
++      <Tag key={`l${blocks.length}`} className={styles.list}>
++        {list.items.map((it, i) => (
++          <li key={i}>{inline(it)}</li>
++        ))}
++      </Tag>,
++    );
++    list = null;
++  };
++  for (const raw of lines) {
++    const line = raw.trimEnd();
++    const bullet = /^\s*[-•*]\s+(.*)$/.exec(line);
++    const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
++    if (bullet || numbered) {
++      const ordered = !!numbered;
++      if (!list || list.ordered !== ordered) {
++        flush();
++        list = { ordered, items: [] };
++      }
++      list.items.push((bullet ?? numbered)![1]);
++      continue;
++    }
++    flush();
++    if (line.trim() === "") continue;
++    blocks.push(
++      <p key={`p${blocks.length}`} className={styles.p}>
++        {inline(line.replace(/^#+\s*/, ""))}
++      </p>,
++    );
++  }
++  flush();
++  return <div className={`${styles.rich} ${className ?? ""}`}>{blocks}</div>;
++};
++
++function inline(s: string): ReactNode {
++  const parts = s.split(/(\*\*[^*]+\*\*)/g);
++  return parts.map((p, i) =>
++    p.startsWith("**") && p.endsWith("**") && p.length > 4 ? <strong key={i}>{p.slice(2, -2)}</strong> : <Fragment key={i}>{p}</Fragment>,
++  );
++}
+*** Add File: components/RichText.module.css
++.rich {
++  display: grid;
++  gap: 6px;
++}
++
++.p {
++  margin: 0;
++}
++
++.list {
++  margin: 0;
++  padding-left: 1.1rem;
++  display: grid;
++  gap: 3px;
++}
++
++.rich strong {
++  font-weight: 700;
++  color: var(--primary);
++}
+*** End Patch

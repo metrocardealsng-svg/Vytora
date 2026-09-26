@@ -1,0 +1,315 @@
+*** Begin Patch
+*** Add File: pages/records.pageLayout.tsx
++import { AppShell } from "../components/AppShell";
++import { AppPageLayout } from "../components/AppPageLayout";
++
++export default [AppShell, AppPageLayout];
+*** Add File: pages/records.tsx
++import { useState } from "react";
++import { Link } from "react-router-dom";
++import { Helmet } from "react-helmet";
++import { Trophy } from "lucide-react";
++import { PageHeader } from "../components/PageHeader";
++import { Button } from "../components/Button";
++import { Skeleton } from "../components/Skeleton";
++import { useRecords } from "../helpers/useVytoraData";
++import { ACTIVITY_LABELS, EFFORTS, formatDate, formatDuration, formatPace } from "../helpers/fitness";
++import type { ActivityType } from "../helpers/schema";
++import styles from "./records.module.css";
++
++const TYPES: ActivityType[] = ["run", "walk", "hike", "cycle"];
++
++export default function RecordsPage() {
++  const { data, isPending } = useRecords();
++  const [type, setType] = useState<ActivityType>("run");
++  const rows = (data ?? []).filter((r) => r.type === type);
++  const typesWithData = new Set((data ?? []).map((r) => r.type));
++
++  return (
++    <div className={styles.page}>
++      <Helmet>
++        <title>Personal Records · Vytora</title>
++      </Helmet>
++      <PageHeader
++        eyebrow="Your bests"
++        title="Personal records"
++        subtitle="Your fastest times at standard distances, found automatically inside every GPS activity. Race them from the tracker."
++        actions={
++          <Button asChild>
++            <Link to="/tracker">Race a PR</Link>
++          </Button>
++        }
++      />
++      <div className={styles.types}>
++        {TYPES.map((t) => (
++          <button key={t} type="button" className={`${styles.type} ${type === t ? styles.typeActive : ""}`} onClick={() => setType(t)}>
++            {ACTIVITY_LABELS[t]}
++            {typesWithData.has(t) && <span className={styles.dot} />}
++          </button>
++        ))}
++      </div>
++      {isPending ? (
++        <Skeleton className={styles.skel} />
++      ) : (
++        <div className={styles.grid}>
++          {EFFORTS.map((e) => {
++            const r = rows.find((x) => x.effort === e.key);
++            return (
++              <div key={e.key} className={`${styles.card} ${r ? styles.has : ""}`}>
++                <div className={styles.cardTop}>
++                  <span className={styles.label}>{e.label}</span>
++                  {r && <Trophy size={16} className={styles.trophy} />}
++                </div>
++                {r ? (
++                  <>
++                    <div className={styles.time}>{formatDuration(r.seconds)}</div>
++                    <div className={styles.meta}>
++                      {formatPace(r.seconds / (e.meters / 1000))}/km · {formatDate(r.startedAt)}
++                    </div>
++                    <div className={styles.meta}>
++                      {r.attempts} effort{r.attempts === 1 ? "" : "s"} ·{" "}
++                      <Link to={`/activities/${r.activityId}`} className={styles.link}>
++                        View activity
++                      </Link>
++                    </div>
++                  </>
++                ) : (
++                  <div className={styles.empty}>Not yet. Cover {e.label.toLowerCase()} in one GPS {ACTIVITY_LABELS[type].toLowerCase()} to set it.</div>
++                )}
++              </div>
++            );
++          })}
++        </div>
++      )}
++    </div>
++  );
++}
+*** Add File: pages/records.module.css
++.page {
++  display: flex;
++  flex-direction: column;
++}
++
++.types {
++  display: flex;
++  gap: 6px;
++  margin-bottom: var(--spacing-4);
++  overflow-x: auto;
++}
++
++.type {
++  position: relative;
++  padding: 8px 16px;
++  border-radius: var(--radius-full);
++  border: 1px solid var(--border);
++  background: rgba(255, 255, 255, 0.03);
++  color: var(--muted-foreground);
++  font-family: inherit;
++  font-weight: 700;
++  cursor: pointer;
++}
++
++.typeActive {
++  background: var(--primary);
++  border-color: var(--primary);
++  color: var(--primary-foreground);
++}
++
++.dot {
++  position: absolute;
++  top: 4px;
++  right: 6px;
++  width: 6px;
++  height: 6px;
++  border-radius: 50%;
++  background: var(--accent);
++}
++
++.skel {
++  height: 300px;
++  border-radius: var(--radius-lg);
++}
++
++.grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: var(--spacing-3);
++}
++
++.card {
++  padding: var(--spacing-4);
++  border-radius: var(--radius-lg);
++  background: var(--card);
++  border: 1px dashed var(--border-strong);
++  min-width: 0;
++}
++
++.has {
++  border-style: solid;
++  border-color: rgba(200, 255, 90, 0.35);
++  background: linear-gradient(160deg, rgba(200, 255, 90, 0.08), var(--card) 60%);
++}
++
++.cardTop {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++}
++
++.label {
++  font-size: 0.72rem;
++  font-weight: 800;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--muted-foreground);
++}
++
++.trophy {
++  color: var(--accent);
++}
++
++.time {
++  font-family: var(--font-family-display);
++  font-weight: 800;
++  font-size: 2rem;
++  letter-spacing: -0.03em;
++  margin: var(--spacing-2) 0 2px;
++  font-variant-numeric: tabular-nums;
++}
++
++.meta {
++  font-size: 0.75rem;
++  color: var(--muted-foreground);
++}
++
++.link {
++  color: var(--primary);
++  text-decoration: none;
++  font-weight: 600;
++}
++
++.empty {
++  margin-top: var(--spacing-2);
++  font-size: 0.78rem;
++  color: var(--subtle-foreground);
++}
++
++@media (min-width: 800px) {
++  .grid {
++    grid-template-columns: repeat(4, minmax(0, 1fr));
++  }
++}
+*** Update File: components/AppShell.tsx
+@@
+ const MORE = [
++  { to: "/records", label: "Records", icon: Medal },
+   { to: "/sleep", label: "Sleep", icon: Moon },
+@@
+   Menu,
++  Medal,
+   Moon,
+*** Update File: components/TribeFeed.tsx
+@@
+ import { Skeleton } from "./Skeleton";
++import { RouteSketch } from "./RouteSketch";
++import { Link } from "react-router-dom";
+ import { uploadTribeImage, useCreatePost, useDeletePost, useToggleLike, useTribeFeed } from "../helpers/useTribe";
+-import { timeAgo } from "../helpers/fitness";
++import { ACTIVITY_LABELS, formatDuration, formatKm, formatPace, paceSecPerKm, timeAgo } from "../helpers/fitness";
+@@
+             {p.content && <p className={styles.text}>{p.content}</p>}
++            {p.activity && (
++              <div className={styles.activity}>
++                <div className={styles.actStats}>
++                  <span className={styles.actType}>{ACTIVITY_LABELS[p.activity.type]}</span>
++                  <div className={styles.actNums}>
++                    {p.activity.distanceMeters >= 50 && (
++                      <div>
++                        <b>{formatKm(p.activity.distanceMeters)}</b>
++                        <span>km</span>
++                      </div>
++                    )}
++                    <div>
++                      <b>{formatDuration(p.activity.durationSeconds)}</b>
++                      <span>time</span>
++                    </div>
++                    {p.activity.distanceMeters >= 200 && (
++                      <div>
++                        <b>{formatPace(paceSecPerKm(p.activity.durationSeconds, p.activity.distanceMeters))}</b>
++                        <span>/km</span>
++                      </div>
++                    )}
++                    {p.activity.elevationGainM > 0 && (
++                      <div>
++                        <b>{p.activity.elevationGainM}</b>
++                        <span>m climb</span>
++                      </div>
++                    )}
++                  </div>
++                </div>
++                {p.activity.route.length > 1 && <RouteSketch route={p.activity.route} />}
++                {p.userId === me.id && (
++                  <Link to={`/activities/${p.activity.id}`} className={styles.actLink}>
++                    Open activity →
++                  </Link>
++                )}
++              </div>
++            )}
+*** Update File: components/TribeFeed.module.css
+@@
+ .text {
+   margin: var(--spacing-3) 0 0;
+   line-height: 1.6;
+   white-space: pre-wrap;
+   word-wrap: break-word;
+ }
++
++.activity {
++  margin-top: var(--spacing-3);
++  padding: var(--spacing-3);
++  border-radius: var(--radius-md);
++  background: rgba(255, 255, 255, 0.03);
++  border: 1px solid var(--border);
++  display: grid;
++  gap: var(--spacing-3);
++}
++
++.actType {
++  font-size: 0.68rem;
++  font-weight: 800;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++  color: var(--primary);
++}
++
++.actNums {
++  display: flex;
++  flex-wrap: wrap;
++  gap: var(--spacing-6);
++  margin-top: 4px;
++}
++
++.actNums div {
++  display: flex;
++  flex-direction: column;
++}
++
++.actNums b {
++  font-family: var(--font-family-display);
++  font-size: 1.35rem;
++  font-variant-numeric: tabular-nums;
++}
++
++.actNums span {
++  font-size: 0.65rem;
++  color: var(--muted-foreground);
++  text-transform: uppercase;
++}
++
++.actLink {
++  font-size: 0.78rem;
++  color: var(--primary);
++  text-decoration: none;
++  font-weight: 600;
++}
+*** End Patch

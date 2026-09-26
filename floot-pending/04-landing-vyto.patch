@@ -1,0 +1,16 @@
+*** Begin Patch
+*** Update File: components/SiteLayout.tsx
+@@
+ import { Button } from "./Button";
++import { CoachWidget } from "./CoachWidget";
+ import { useAuth } from "../helpers/useAuth";
+@@
+         <div className={styles.copy}>
+           © {new Date().getFullYear()} Vytora. Owned by Metrothecreator. Made in Nigeria 🇳🇬
+         </div>
+       </footer>
++      <CoachWidget />
+     </div>
+   );
+ };
+*** End Patch
