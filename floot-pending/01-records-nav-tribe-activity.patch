@@ -201,13 +201,13 @@
 +}
 *** Update File: components/AppShell.tsx
 @@
- const MORE = [
-+  { to: "/records", label: "Records", icon: Medal },
-   { to: "/sleep", label: "Sleep", icon: Moon },
-@@
    Menu,
 +  Medal,
    Moon,
+@@
+ const MORE = [
++  { to: "/records", label: "Records", icon: Medal },
+   { to: "/sleep", label: "Sleep", icon: Moon },
 *** Update File: components/TribeFeed.tsx
 @@
  import { Skeleton } from "./Skeleton";
@@ -220,7 +220,7 @@
              {p.content && <p className={styles.text}>{p.content}</p>}
 +            {p.activity && (
 +              <div className={styles.activity}>
-+                <div className={styles.actStats}>
++                <div>
 +                  <span className={styles.actType}>{ACTIVITY_LABELS[p.activity.type]}</span>
 +                  <div className={styles.actNums}>
 +                    {p.activity.distanceMeters >= 50 && (

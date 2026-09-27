@@ -4,7 +4,7 @@
     "max_cost_per_signup_ngn": 300,
     "mode": "auto-post"
   },
-  "app_url": null,
+  "app_url": "https://vytora.floot.app",
   "floot_project_id": "cc16ffb5-2963-4063-bba3-7622f25664c1",
   "phase": 1,
   "last_run": null,
@@ -14,10 +14,8 @@
   "signups": [],
   "learnings": [],
   "blockers": [
-    "Vytora not published yet (app_url null)",
     "TikTok not connected in Higgsfield",
     "Higgsfield on free plan (10 credits)",
-    "No ad account connected in AdWhispr (needed for Phase 2 only)",
-    "signup_source tracking not live yet (floot-pending/05)"
+    "No ad account connected in AdWhispr (needed for Phase 2 only)"
   ]
 }
