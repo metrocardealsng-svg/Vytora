@@ -7,7 +7,7 @@
   "app_url": "https://vytora.floot.app",
   "floot_project_id": "cc16ffb5-2963-4063-bba3-7622f25664c1",
   "phase": 1,
-  "last_run": null,
+  "last_run": "2026-09-27T05:53:00Z",
   "spend": {},
   "posts": [],
   "campaigns": [],
@@ -17,5 +17,18 @@
     "TikTok not connected in Higgsfield",
     "Higgsfield on free plan (10 credits)",
     "No ad account connected in AdWhispr (needed for Phase 2 only)"
+  ],
+  "runs": [
+    {
+      "at": "2026-09-27T05:53:00Z",
+      "result": "blocked",
+      "signups_total": 0,
+      "posted": 0,
+      "spend_ngn": 0,
+      "blockers": [
+        "tiktok_not_connected",
+        "higgsfield_free_10_credits"
+      ]
+    }
   ]
 }
