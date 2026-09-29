@@ -7,15 +7,31 @@
   "app_url": "https://vytora.floot.app",
   "floot_project_id": "cc16ffb5-2963-4063-bba3-7622f25664c1",
   "phase": 1,
-  "last_run": "2026-09-28T05:53:00Z",
+  "last_run": "2026-09-29T05:58:00Z",
   "spend": {},
-  "posts": [],
+  "posts": [
+    {
+      "id": "tt-20260929-heat",
+      "date": "2026-09-29",
+      "angle": "heat_hacks",
+      "format": "photo_carousel_4",
+      "caption": "Running in Lagos at 2pm? You're not slow. Na the heat.",
+      "utm_campaign": "heat-0929",
+      "publish_session": "5c76520f-3aa8-4e46-83ed-1958c759d32f",
+      "status": "awaiting_owner_submit",
+      "credits_used": 2,
+      "virality_gate": "skipped (photo post, predictor is video-only)",
+      "views": null
+    }
+  ],
   "campaigns": [],
   "signups": [],
-  "learnings": [],
+  "learnings": [
+    "Free Higgsfield: gpt_image_2_5 needs Basic plan; gpt_image_2 works at 0.5 credit. Generation is PNG, so convert to JPEG in sandbox_exec and re-upload before TikTok."
+  ],
   "blockers": [
-    "TikTok not connected in Higgsfield",
-    "Higgsfield on free plan (10 credits)",
+    "Each TikTok post needs the owner to submit the publish form (TikTok consent rule, cannot be skipped)",
+    "Higgsfield free plan: 8 credits, 1 job at a time, video models locked. Photo carousels only (gpt_image_2, 0.5 credit/slide)",
     "No ad account connected in AdWhispr (needed for Phase 2 only)"
   ],
   "runs": [
@@ -40,6 +56,20 @@
         "tiktok_not_connected",
         "higgsfield_free_10_credits"
       ]
+    },
+    {
+      "at": "2026-09-29T05:58:00Z",
+      "result": "prepared_post",
+      "signups_total": 0,
+      "posted": 0,
+      "prepared": 1,
+      "spend_ngn": 0,
+      "blockers": [
+        "owner_must_submit_tiktok_form",
+        "higgsfield_free_8_credits"
+      ]
     }
-  ]
+  ],
+  "tiktok_connector_id": "6e16da8c-2746-4a31-b6f8-eba8569cd88c",
+  "bio_link": "https://vytora.floot.app/?utm_source=tiktok&utm_campaign=bio"
 }
