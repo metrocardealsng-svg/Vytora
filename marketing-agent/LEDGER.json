@@ -7,8 +7,11 @@
   "app_url": "https://vytora.floot.app",
   "floot_project_id": "cc16ffb5-2963-4063-bba3-7622f25664c1",
   "phase": 1,
-  "last_run": "2026-09-30T05:56:00Z",
-  "spend": {},
+  "last_run": "2026-10-01T05:55:00Z",
+  "spend": {
+    "2026-09": 0,
+    "2026-10": 0
+  },
   "posts": [
     {
       "id": "tt-20260929-heat",
@@ -17,8 +20,8 @@
       "format": "photo_carousel_4",
       "caption": "Running in Lagos at 2pm? You're not slow. Na the heat.",
       "utm_campaign": "heat-0929",
-      "publish_session": "c53c0acc-09fe-4a48-9d63-17dfcf5b91ba",
-      "status": "requeued_2026-09-30 (first form expired unsubmitted)",
+      "publish_session": "18b09992-f361-431f-93bd-67a774c05628",
+      "status": "requeued_2026-10-01 (expired unsubmitted 2x)",
       "credits_used": 2,
       "virality_gate": "skipped (photo post, predictor is video-only)",
       "views": null
@@ -72,6 +75,19 @@
     },
     {
       "at": "2026-09-30T05:56:00Z",
+      "result": "requeued_unsubmitted_post",
+      "signups_total": 0,
+      "posted": 0,
+      "prepared": 1,
+      "spend_ngn": 0,
+      "credits_used": 0,
+      "blockers": [
+        "owner_must_submit_tiktok_form",
+        "higgsfield_free_8_credits"
+      ]
+    },
+    {
+      "at": "2026-10-01T05:55:00Z",
       "result": "requeued_unsubmitted_post",
       "signups_total": 0,
       "posted": 0,
